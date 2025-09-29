@@ -1,0 +1,35 @@
+Subject: [PATCH] incfs: Use ARM64 v8 ASM to accelerate lz4 decompression
+crypto: lz4: Use ARM64 v8 ASM to accelerate decompression
+lz4: 1.10
+---
+Index: fs/f2fs/Makefile
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/fs/f2fs/Makefile b/fs/f2fs/Makefile
+--- a/fs/f2fs/Makefile	(revision 802d968fb2c726f0a9dd88fed80a003d724769d4)
++++ b/fs/f2fs/Makefile	(revision b2497e4243461a835c25469028cd355bfc2e993f)
+@@ -10,6 +10,3 @@
+ f2fs-$(CONFIG_FS_VERITY) += verity.o
+ f2fs-$(CONFIG_F2FS_FS_COMPRESSION) += compress.o
+ f2fs-$(CONFIG_F2FS_IOSTAT) += iostat.o
+-ifeq ($(CONFIG_F2FS_FS_COMPRESSION_FIXED_OUTPUT),y)
+-f2fs-$(CONFIG_ARM64) += $(addprefix lz4armv8/, lz4accel.o lz4armv8.o)
+-endif
+Index: fs/f2fs/compress.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/fs/f2fs/compress.c b/fs/f2fs/compress.c
+--- a/fs/f2fs/compress.c	(revision 802d968fb2c726f0a9dd88fed80a003d724769d4)
++++ b/fs/f2fs/compress.c	(revision b2497e4243461a835c25469028cd355bfc2e993f)
+@@ -20,7 +20,6 @@
+ #include "segment.h"
+ #include <trace/events/f2fs.h>
+ #if defined(CONFIG_F2FS_FS_COMPRESSION_FIXED_OUTPUT) || defined(__ARCH_HAS_LZ4_ACCELERATOR)
+-#include "lz4armv8/lz4accel.h"
+ #include "f2fs_lz4.h"
+ #endif
+ 

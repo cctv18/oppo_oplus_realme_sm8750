@@ -295,10 +295,12 @@ jobs:
             cd kernel_workspace
             git clone https://github.com/cctv18/oppo_oplus_realme_sm8750.git
             cp ./oppo_oplus_realme_sm8750/zram_patch/001-lz4.patch ./common/
+            cp ./oppo_oplus_realme_sm8750/zram_patch/001-lz4-clearMake.patch ./common/
             cp ./oppo_oplus_realme_sm8750/zram_patch/lz4armv8.S ./common/lib
             cp ./oppo_oplus_realme_sm8750/zram_patch/002-zstd.patch ./common/
             cd ./common
             git apply -p1 < 001-lz4.patch || true
+            git apply -p1 < 001-lz4-clearMake.patch || true
             patch -p1 < 002-zstd.patch || true
           fi
 

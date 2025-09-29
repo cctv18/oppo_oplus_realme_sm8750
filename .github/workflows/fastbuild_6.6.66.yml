@@ -61,8 +61,8 @@ on:
         options:
           - 'true'
           - 'false'
-      ssg_rekernel_enable:
-        description: '是否启用三星SSG IO调度器及Re-Kernel支持(0=均不安装,1=安装SSG IO调度器,2=安装Re-Kernel,3=均安装,默认1)'
+      adios_rekernel_enable:
+        description: '是否启用ADIOS IO调度器及Re-Kernel支持(0=均不安装,1=安装ADIOS调度器,2=安装Re-Kernel,3=均安装,默认1)'
         required: true
         type: choice
         default: '0'
@@ -442,18 +442,18 @@ jobs:
             fi
           fi
 
-      - name: 启用三星SSG IO调度器
+      - name: 启用ADIOS IO调度器
         run: |
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
-            echo "正在启用三星SSG IO调度器(一加12等极少数机型开启后可能不开机,若出现bug请关闭此项)…"
+          if [[ "${{ github.event.inputs.adios_rekernel_enable }}" == "1" || "${{ github.event.inputs.adios_rekernel_enable }}" == "3" ]]; then
+            echo "正在启用ADIOS IO调度器(将截止时间优先调度算法与基于自主学习的自适应延迟控制算法相结合, 降低I/O延迟)…"
             cd kernel_workspace
-            echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "MQ_IOSCHED_ADIOS=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "MQ_IOSCHED_DEFAULT_ADIOS=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
 
       - name: 启用Re-Kernel支持
         run: |
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
+          if [[ "${{ github.event.inputs.adios_rekernel_enable }}" == "2" || "${{ github.event.inputs.adios_rekernel_enable }}" == "3" ]]; then
             echo "正在启用Re-Kernel支持(用于与Freezer,NoActive等软件配合使用,提升冻结后台能力)…"
             cd kernel_workspace
             echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -644,19 +644,19 @@ jobs:
           else
             lz4_zstd_enable="false"
           fi
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
-            ssg_enable="true"
+          if [[ "${{ github.event.inputs.adios_rekernel_enable }}" == "1" || "${{ github.event.inputs.adios_rekernel_enable }}" == "3" ]]; then
+            adios_enable="true"
           else
-            ssg_enable="false"
+            adios_enable="false"
           fi
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
+          if [[ "${{ github.event.inputs.adios_rekernel_enable }}" == "2" || "${{ github.event.inputs.adios_rekernel_enable }}" == "3" ]]; then
             rekernel_enable="true"
           else
             rekernel_enable="false"
           fi
           echo "lz4kd_enable=$lz4kd_enable" >> $GITHUB_ENV
           echo "lz4_zstd_enable=$lz4_zstd_enable" >> $GITHUB_ENV
-          echo "ssg_enable=$ssg_enable" >> $GITHUB_ENV
+          echo "adios_enable=$adios_enable" >> $GITHUB_ENV
           echo "rekernel_enable=$rekernel_enable" >> $GITHUB_ENV
          
       - name: 创建发布
@@ -677,7 +677,7 @@ jobs:
             - LZ4支持：${{ env.lz4_zstd_enable }}
             - 网络功能增强：${{ github.event.inputs.better_net }}
             - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
-            - 三星SSG IO调度器支持：${{ env.ssg_enable }}
+            - ADIOS IO调度器支持：${{ env.adios_enable }}
             - Re-Kernel支持：${{ env.rekernel_enable }}
             - 内核级基带保护支持：${{ github.event.inputs.baseband_guard }}
             - 推荐系统：ColorOS 15 / RealmeUI 6.0

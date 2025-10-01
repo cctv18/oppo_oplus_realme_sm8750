@@ -532,7 +532,6 @@ jobs:
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
           echo "sloppiness = time_macros,include_file_mtime" >> "$CCACHE_DIR/ccache.conf"
-          echo "run_second_cpp = false" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
           #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行

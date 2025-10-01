@@ -111,19 +111,20 @@ jobs:
           mkdir kernel_workspace
 
       - name: 载入当前版本内核的 ccache缓存
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-new-6.6.50-${{ runner.os }}-main
+          key: ccache-6.6.50-${{ runner.os }}-main
           restore-keys: |
-            ccache-new-6.6.50-${{ runner.os }}-
-            ccache-new-6.6.50-
+            ccache-6.6.50-${{ runner.os }}-
+            ccache-6.6.50-
       
       - name: 初始化并配置ccache
         run: |
           # 设置ccache环境变量
-          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+          export CCACHE_COMPILERCHECK="none"
+          export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
@@ -527,11 +528,14 @@ jobs:
           echo "LLD版本: $LLD_VERSION"
           pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
           
-          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+          export CCACHE_LOGFILE="${{ github.workspace }}/kernel_workspace/ccache.log"
+          export CCACHE_COMPILERCHECK="none"
+          export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
+          echo "sloppiness = time_macros,include_file_ctime,include_file_mtime,file_stat_matches,file_macro,time_macros,pch_defines" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
           #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
@@ -539,6 +543,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
+          find $(pwd) -type f -exec touch -d "2025-05-25 08:00:00" {} + &&
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error KCFLAGS+=-ferror-limit=0 gki_defconfig Image
           echo "内核编译完成！"
           echo "ccache状态："

@@ -459,15 +459,6 @@ jobs:
             echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
 
-      - name: 添加风驰补丁
-        run: |
-          echo "正在添加风驰补丁…"
-          cd kernel_workspace
-          #echo "CONFIG_HMBIRD_SCHED=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #cd ./common/kernel
-          #wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/hmbird_patch.c
-          #echo "obj-y += hmbird_patch.o" >> ./Makefile
-
       - name: 启用内核级基带保护
         run: |
           if [[ "${{ github.event.inputs.baseband_guard }}" == "true" ]]; then

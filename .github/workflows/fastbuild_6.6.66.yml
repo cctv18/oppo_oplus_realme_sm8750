@@ -531,6 +531,7 @@ jobs:
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
+          echo "sloppiness = time_macros,include_file_mtime" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
           #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
@@ -538,7 +539,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error KCFLAGS+=-ferror-limit=0 gki_defconfig Image
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error KCFLAGS+=-Wno-error=date-time KCFLAGS+=-ferror-limit=0 gki_defconfig Image
           echo "内核编译完成！"
           echo "ccache状态："
           ccache -s

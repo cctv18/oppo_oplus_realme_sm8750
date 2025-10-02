@@ -115,15 +115,16 @@ jobs:
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-new-6.6.66-${{ runner.os }}-main
+          key: ccache-6.6.66-${{ runner.os }}-main
           restore-keys: |
-            ccache-new-6.6.66-${{ runner.os }}-
-            ccache-new-6.6.66-
+            ccache-6.6.66-${{ runner.os }}-
+            ccache-6.6.66-
       
       - name: 初始化并配置ccache
         run: |
           # 设置ccache环境变量
-          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+          export CCACHE_COMPILERCHECK="none"
+          export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
@@ -540,6 +541,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
+          find $(pwd) -type f -exec touch -d "2025-05-25 08:00:00" {} + &&
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error KCFLAGS+=-ferror-limit=0 gki_defconfig Image
           echo "内核编译完成！"
           echo "ccache状态："

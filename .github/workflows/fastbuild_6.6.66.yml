@@ -27,7 +27,7 @@ on:
           - 'kprobes'
           - 'syscall'
       kpm_enable:
-        description: '是否开启kpm(仅对sukisu生效;可能轻微增加耗电，不需要可关闭)'
+        description: '是否开启kpm(仅对sukisu生效; 可能轻微增加耗电，不需要可保持默认关闭)'
         required: true
         type: choice
         default: 'false'
@@ -65,7 +65,7 @@ on:
         description: '是否启用ADIOS IO调度器及Re-Kernel支持(0=均不安装,1=安装ADIOS调度器,2=安装Re-Kernel,3=均安装,默认1)'
         required: true
         type: choice
-        default: '0'
+        default: '1'
         options:
           - '0'
           - '1'
@@ -281,11 +281,21 @@ jobs:
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-            cp ./kernel_patches/next/scope_min_manual_hooks_v1.5.patch ./common/
+            if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
+              cp ./kernel_patches/next/scope_min_manual_hooks_v1.5.patch ./common/
+            fi
+            if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
+              cp ./kernel_patches/next/syscall_hooks.patch ./common/
+            fi
             cp ./kernel_patches/69_hide_stuff.patch ./common/
             cd ./common
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-            patch -p1 -N -F 3 < scope_min_manual_hooks_v1.5.patch || true
+            if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
+              patch -p1 -N -F 3 < scope_min_manual_hooks_v1.5.patch || true
+            fi
+            if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
+              patch -p1 -N -F 3 < syscall_hooks.patch || true
+            fi
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
           
@@ -356,11 +366,10 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
-            # 以下配置未核实必要性，待测试
-            #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            #sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
-            #sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig
           fi
+          #添加对 Mountify (backslashxx/mountify) 模块的支持
+          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 开启O2编译优化配置
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./common/arch/arm64/configs/gki_defconfig
           #禁用 defconfig 检查
@@ -471,7 +480,7 @@ jobs:
             unzip -q master.zip
             mv "Baseband-guard-master" baseband-guard
             printf '\nobj-$(CONFIG_BBG) += baseband-guard/\n' >> ./Makefile
-            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/landlock/landlock,baseband_guard/ } }' ./Kconfig
+            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./Kconfig
             awk '
             /endmenu/ { last_endmenu_line = NR }
             { lines[NR] = $0 }
@@ -674,7 +683,7 @@ jobs:
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
             - 机型：欧加真骁龙8Elite 6.6.66 Android 15内核通用（基于一加13 6.6.66 Android 15 版官方OKI源码）
-            - 特性：${{ env.KSU_BRANCH }} + SUSFS + KPM
+            - 特性：${{ env.KSU_BRANCH }} + SUSFS + 风驰内核
             - hook模式：${{ github.event.inputs.hook_method }}
             - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}
             - LZ4KD支持：${{ env.lz4kd_enable }}

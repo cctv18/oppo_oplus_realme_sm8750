@@ -1,4 +1,4 @@
-name: 加速版构建 6.6.66 欧加真OKI内核
+name: 加速版构建 6.6.57 欧加真OKI内核
 
 env:
   TZ: Asia/Shanghai
@@ -109,9 +109,9 @@ jobs:
           #sudo apt-get install -y --no-install-recommends curl bison flex make binutils git perl gcc python3 python-is-python3 bc libssl-dev libelf-dev zip unzip ccache
           
           echo "正在克隆源码仓库..."
-          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8750/archive/refs/heads/oneplus/sm8750_v_15.0.2_oneplus_13_6.6.66.zip -o common.zip && 
+          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8750/archive/refs/heads/oneplus/sm8750_v_15.0.1_pad_2_pro.zip -o common.zip && 
           unzip -q common.zip && 
-          mv "android_kernel_common_oneplus_sm8750-oneplus-sm8750_v_15.0.2_oneplus_13_6.6.66" common &&
+          mv "android_kernel_common_oneplus_sm8750-oneplus-sm8750_v_15.0.1_pad_2_pro" common &&
           rm -rf common.zip &
           
           echo "正在克隆llvm-clang18工具链..." &&
@@ -136,21 +136,21 @@ jobs:
 
       - name: 配置ccache目录
         run: |
-          echo "CCACHE_DIR=$HOME/.ccache_6.6.66" >> $GITHUB_ENV
+          echo "CCACHE_DIR=$HOME/.ccache_6.6.57" >> $GITHUB_ENV
           echo "CCACHE_MAXSIZE=3G" >> $GITHUB_ENV
           echo "当前磁盘空间："
           df -h
-          echo "当前构建内核版本：6.6.66"
+          echo "当前构建内核版本：6.6.57"
 
       - name: 载入当前版本内核的 ccache缓存
         uses: actions/cache@v4
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-neov2-6.6.66-${{ runner.os }}-main
+          key: ccache-neov2-6.6.57-${{ runner.os }}-main
           restore-keys: |
-            ccache-neov2-6.6.66-${{ runner.os }}-
-            ccache-neov2-6.6.66-
+            ccache-neov2-6.6.57-${{ runner.os }}-
+            ccache-neov2-6.6.57-
       
       - name: 初始化并配置ccache
         run: |
@@ -683,11 +683,11 @@ jobs:
       - name: 设置环境变量
         run: |
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            FULL_VERSION=${{ format('{0}.66-{1}', env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
+            FULL_VERSION=${{ format('{0}.57-{1}', env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
             echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
             export FULL_VERSION=$FULL_VERSION
           else
-            FULL_VERSION=${{ format('{0}.66-{1}', env.KERNEL_VERSION, env.KERNEL_NAME) }}
+            FULL_VERSION=${{ format('{0}.57-{1}', env.KERNEL_VERSION, env.KERNEL_NAME) }}
             echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
             export FULL_VERSION=$FULL_VERSION
           fi
@@ -738,7 +738,7 @@ jobs:
             ### 📱 欧加真 Android 15 ${{ env.KSU_BRANCH }} SM8750 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：欧加真骁龙8Elite 6.6.66 Android 15内核通用（基于一加13 6.6.66 版官方OKI源码）
+            - 机型：欧加真骁龙8Elite 6.6.57 Android 15内核通用（基于一加平板2Pro 6.6.57 版官方OKI源码）
             - 特性：${{ env.KSU_BRANCH }} + SUSFS + 风驰内核
             - hook模式：${{ github.event.inputs.hook_method }}
             - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}

@@ -740,7 +740,7 @@ jobs:
             ### 📱 欧加真 Android 15 ${{ env.KSU_BRANCH }} SM8750 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：欧加真天玑9400+ 6.6.50 Android 15内核通用（基于一加Ace5 Ultra 6.6.50 Android 15 版官方OKI源码）
+            - 机型：欧加真天玑9400+ 6.6.50 Android 15内核通用（基于一加Ace5 Ultra 6.6.50 版官方OKI源码）
             - 特性：${{ env.KSU_BRANCH }} + SUSFS + 风驰内核
             - hook模式：${{ github.event.inputs.hook_method }}
             - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}

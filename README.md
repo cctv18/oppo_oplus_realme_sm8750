@@ -1,4 +1,4 @@
-# 欧加真 SM8750/MT6991 系列通用6.6内核自动化编译脚本
+# 欧加真 SM8750/MT6991 系列通用6.6风驰移植内核自动化编译脚本
 [![STAR](https://img.shields.io/github/stars/cctv18/oppo_oplus_realme_sm8750?style=flat&logo=github)](https://github.com/cctv18/oppo_oplus_realme_sm8750/stargazers)
 [![FORK](https://img.shields.io/github/forks/cctv18/oppo_oplus_realme_sm8750?style=flat&logo=greasyfork&color=%2394E61A)](https://github.com/cctv18/oppo_oplus_realme_sm8750/forks)
 [![COOLAPK](https://img.shields.io/badge/cctv18_2-cctv18_2?style=flat&logo=android&logoColor=FF4500&label=%E9%85%B7%E5%AE%89&color=FF4500)](http://www.coolapk.com/u/22650293)
@@ -19,15 +19,11 @@
 ## 已实现：
 - [x] 欧加真 SM8750 通用OKI内核（基于一加13源码的 6.6.30, 一加13t源码的 6.6.56, 一加Pad2Pro源码的 6.6.57, 一加13源码的 6.6.66 及一加13国际版源码的 6.6.89，其他同内核版本非SM8750机型可自行测试，部分机型可完全兼容）
 - [x] 欧加真 MT6991 通用OKI内核（基于一加Ace5至尊版源码的 6.6.50 官方内核源码，其他同内核版本非MT6989机型可自行测试，部分机型可完全兼容）
-- [x] SukiSU Ultra/KernelSU Next双版本KSU可选
-- [x] 引入ccache缓存及大量独家编译流程优化，二次编译时间可稳定在约6min (注：首次使用ccache由于需要创建缓存速度会比较慢，约22min，从第二次开始ccache才会生效加速编译，加速后单次编译时间约6min；之后除非缓存出现问题，如源码大幅改动导致缓存命中率降低等，可无需手动清理ccache缓存；由于现在GitHub Action的机制，保存的缓存在创建一段时间后会被自动清除，故距离上一次创建缓存较长时间后可能无法获取到缓存，此时编译会自动重建缓存)
-- [x] 引入O2编译优化，改善内核运行性能
-- [x] 可选manual/kprobes钩子模式：kprobes钩子模式下支持切换至sus su模式（类似面具的su实现，用于兼容一些程序的运行）
-- [x] lz4 1.10.0 & zstd 1.5.7 算法更新&优化补丁(来自[@ferstar](https://github.com/ferstar), 移植by [@Xiaomichael](https://github.com/Xiaomichael), 6.6版本补丁重制by [@cctv18](https://github.com/cctv18))
+- [x] lz4 1.10.0 & zst 1.5.7 算法更新&优化补丁(来自[@ferstar](https://github.com/ferstar), 移植by [@Xiaomichael](https://github.com/Xiaomichael), 6.6版本补丁重制by [@cctv18](https://github.com/cctv18))
 - [x] 可选加入 BBR/Brutal 及一系列 tcp 拥塞控制算法
 - [x] [ADIOS IO调度器](https://github.com/firelzrd/adios)移植
 - [x] 加入一些网络连接性能优化配置选项（用于为ipset及需要iptables等高级网络功能内核支持的程序提供支持）
-- [x] 加入Re:Kernel支持，与Freezer，NoActive等软件配合降低功耗
+
 ## 待实现：
 - [ ] 欧加真 SM8750 通用GKI内核（移植一加f2fs源码，实现免清data刷入）
 - [ ] zram内置化，无需外置zram.ko挂载 ~~（有了新版 lz4&zstd 补丁真的还有必要吗）~~
@@ -47,4 +43,3 @@
 - 内核防格基带保护模块：[vc-teahouse/Baseband-guard](https://github.com/vc-teahouse/Baseband-guard)
 - GKI 内核构建脚本：(待定)
 - ~~本地化内核构建脚本（已失效）：[Suxiaoqinx/kernel_manifest_OnePlus_Sukisu_Ultra](https://github.com/Suxiaoqinx/kernel_manifest_OnePlus_Sukisu_Ultra)~~
-- ~~风驰内核源码（不完整，修改中）：[HanKuCha/sched_ext](https://github.com/HanKuCha/sched_ext)~~

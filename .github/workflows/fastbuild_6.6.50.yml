@@ -189,12 +189,6 @@ jobs:
             echo "正在配置SukiSU Ultra..."
             curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s susfs-main
             cd ./KernelSU
-            ############临时修复sulog编译错误############
-            cd kernel
-            rm -rf sulog.c
-            wget https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/343c6452cf84daaa1cfe44643505a09b61a7b762/kernel/sulog.c
-            cd ..
-            ##########################################
             # 获取当前 Git 提交的短哈希 (8位)
             GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
             echo "当前提交哈希: $GIT_COMMIT_HASH"

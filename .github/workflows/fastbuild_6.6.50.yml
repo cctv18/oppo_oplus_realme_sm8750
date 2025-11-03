@@ -147,10 +147,10 @@ jobs:
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-neov2-6.6.50-${{ runner.os }}-main
+          key: ccache-neov4-6.6.50-${{ runner.os }}-main
           restore-keys: |
-            ccache-neov2-6.6.50-${{ runner.os }}-
-            ccache-neov2-6.6.50-
+            ccache-neov4-6.6.50-${{ runner.os }}-
+            ccache-neov4-6.6.50-
       
       - name: 初始化并配置ccache
         run: |

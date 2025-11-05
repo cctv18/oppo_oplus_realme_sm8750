@@ -262,7 +262,7 @@ jobs:
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
             if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-              cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.5.patch ./common/
+              cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.6.patch ./common/
             fi
             if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
               cp ./SukiSU_patch/hooks/syscall_hooks.patch ./common/
@@ -273,7 +273,7 @@ jobs:
             #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
             sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
             if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-              patch -p1 < scope_min_manual_hooks_v1.5.patch || true
+              patch -p1 < scope_min_manual_hooks_v1.6.patch || true
             fi
             if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
               patch -p1 < syscall_hooks.patch || true

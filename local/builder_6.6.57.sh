@@ -119,7 +119,7 @@ if [[ "$KSU_BRANCH" == "y" ]]; then
   git clone https://github.com/ShirkNeko/SukiSU_patch.git
   cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
   if [[ "$APPLY_HOOKS" == "m" || "$APPLY_HOOKS" == "M" ]]; then
-    cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.5.patch ./common/
+    cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.6.patch ./common/
   fi
   if [[ "$APPLY_HOOKS" == "s" || "$APPLY_HOOKS" == "S" ]]; then
     cp ./SukiSU_patch/hooks/syscall_hooks.patch ./common/
@@ -132,7 +132,7 @@ if [[ "$KSU_BRANCH" == "y" ]]; then
   #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
   sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
   if [[ "$APPLY_HOOKS" == "m" || "$APPLY_HOOKS" == "M" ]]; then
-    patch -p1 < scope_min_manual_hooks_v1.5.patch || true
+    patch -p1 < scope_min_manual_hooks_v1.6.patch || true
   fi
   if [[ "$APPLY_HOOKS" == "s" || "$APPLY_HOOKS" == "S" ]]; then
     patch -p1 < syscall_hooks.patch || true

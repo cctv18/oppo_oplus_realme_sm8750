@@ -167,7 +167,7 @@ elif [[ "$KSU_BRANCH" == "m" || "$KSU_BRANCH" == "M" ]]; then
   cp ./SukiSU_patch/69_hide_stuff.patch ./common/
   cd ./KernelSU
   #为MKSU修正susfs 2.0.0补丁
-  sed -i 's/@@ -13,6 +13,10 @@/@@ -13,7 +13,11 @@/' 10_enable_susfs_for_ksu.patch
+  perl -i -pe 'if (/^(@@ -[0-9]+,)([0-9]+)( \+[0-9]+,)([0-9]+)( @@)/) { $line_cache = $_; $n2=$2; $n4=$4; $_ = <>; if ($_ eq " #include <linux/task_work.h>\n") { $n2++; $n4++; $line_cache =~ s/^(@@ -[0-9]+,)([0-9]+)( \+[0-9]+,)([0-9]+)( @@)/$1$n2$3$n4$5/; } print $line_cache; }' 10_enable_susfs_for_ksu.patch
   sed -i '/ #include <linux\/uaccess\.h>/ { N; s| #include <linux/uaccess\.h>\n #include <linux/version\.h>|&\n #include <linux/pid.h>| }' 10_enable_susfs_for_ksu.patch
   patch -p1 < 10_enable_susfs_for_ksu.patch || true
   wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/fix_umount.patch

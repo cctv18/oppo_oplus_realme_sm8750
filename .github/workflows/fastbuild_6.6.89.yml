@@ -10,22 +10,15 @@ on:
   workflow_dispatch:
     inputs:
       ksu_type:
-        description: 'KernelSU分支(SukiSU Ultra/KernelSU Next,默认SukiSU Ultra)'
+        description: 'KernelSU分支(SukiSU Ultra/KernelSU Next/MKSU/KernelSU(原版),默认SukiSU Ultra)'
         required: true
         type: choice
         default: 'sukisu'
         options:
           - 'sukisu'
           - 'ksunext'
-      hook_method:
-        description: hook模式(大部分情况manual即可，少数需切换sus su模式的场景才需要kprobes钩子, 若新版manual钩子出现问题可尝试syscall)
-        required: true
-        type: choice
-        default: 'manual'
-        options:
-          - 'manual'
-          - 'kprobes'
-          - 'syscall'
+          - 'mksu'
+          - 'ksu'
       kpm_enable:
         description: '是否开启kpm(仅对sukisu生效; 可能轻微增加耗电，不需要可保持默认关闭)'
         required: true
@@ -241,7 +234,7 @@ jobs:
             grep -A10 "REPO_OWNER" kernel/Makefile  # 检查插入点后的内容
             grep "KSU_VERSION_FULL" kernel/Makefile # 确认版本定义存在
             echo "SukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             echo "正在配置KernelSU Next..."
             curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
             cd KernelSU-Next
@@ -249,6 +242,22 @@ jobs:
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=11998/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+          elif [[ ${{ github.event.inputs.ksu_type }} == "mksu" ]]; then
+            echo "正在配置 MKSU (5ec1cff/KernelSU)..."
+            curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
+            cd ./KernelSU
+            KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/5ec1cff/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 20000)
+            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
+            sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+          else
+            echo "正在配置原版 KernelSU (tiann/KernelSU)..."
+            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
+            cd ./KernelSU
+            KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/tiann/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 20000)
+            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
+            sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
           fi
 
       - name: 应用 KernelSU & SUSFS 补丁
@@ -261,49 +270,64 @@ jobs:
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-            if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-              cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.6.patch ./common/
-            fi
-            if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
-              cp ./SukiSU_patch/hooks/syscall_hooks.patch ./common/
-            fi
             cp ./SukiSU_patch/69_hide_stuff.patch ./common/
             cd ./common
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-            if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-              patch -p1 < scope_min_manual_hooks_v1.6.patch || true
-            fi
-            if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
-              patch -p1 < syscall_hooks.patch || true
-            fi
             patch -p1 < 69_hide_stuff.patch || true
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             echo "正在添加KernelSU Next补丁..."
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            #由于KernelSU Next尚未更新并适配susfs 2.0.0，故回退至susfs 1.5.12
+            cd susfs4ksu && git checkout a162e2469d0b472545e5e46457eee171c0975fb0 && cd ..
             git clone https://github.com/WildKernels/kernel_patches.git
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-            if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-              cp ./kernel_patches/next/scope_min_manual_hooks_v1.5.patch ./common/
-            fi
-            if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
-              cp ./kernel_patches/next/syscall_hooks.patch ./common/
-            fi
+            cp ./kernel_patches/next/scope_min_manual_hooks_v1.5.patch ./common/
             cp ./kernel_patches/69_hide_stuff.patch ./common/
             cd ./common
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-            if [[ ${{ github.event.inputs.hook_method }} == "manual" ]]; then
-              patch -p1 -N -F 3 < scope_min_manual_hooks_v1.5.patch || true
-            fi
-            if [[ ${{ github.event.inputs.hook_method }} == "syscall" ]]; then
-              patch -p1 -N -F 3 < syscall_hooks.patch || true
-            fi
+            patch -p1 -N -F 3 < scope_min_manual_hooks_v1.5.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
             #为KernelSU Next添加WildKSU管理器支持
             cd ./drivers/kernelsu
             wget https://github.com/WildKernels/kernel_patches/raw/refs/heads/main/next/susfs_fix_patches/v1.5.12/fix_apk_sign.c.patch
             patch -p2 -N -F 3 < fix_apk_sign.c.patch || true
+          elif [[ ${{ github.event.inputs.ksu_type }} == "mksu" ]]; then
+            echo "正在为 MKSU (5ec1cff/KernelSU)添加补丁..."
+            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            git clone https://github.com/ShirkNeko/SukiSU_patch.git
+            cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+            cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
+            cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
+            cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+            cp ./SukiSU_patch/69_hide_stuff.patch ./common/
+            cd ./KernelSU
+            #为MKSU修正susfs 2.0.0补丁
+            sed -i 's/@@ -13,6 +13,10 @@/@@ -13,7 +13,11 @@/' 10_enable_susfs_for_ksu.patch
+            sed -i '/ #include <linux\/uaccess\.h>/ { N; s| #include <linux/uaccess\.h>\n #include <linux/version\.h>|&\n #include <linux/pid.h>| }' 10_enable_susfs_for_ksu.patch
+            patch -p1 < 10_enable_susfs_for_ksu.patch || true
+            wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/fix_umount.patch
+            patch -p1 < fix_umount.patch || true
+            cd ../common
+            patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
+            patch -p1 -N -F 3 < 69_hide_stuff.patch || true
+          else
+            echo "正在为原版 KernelSU (tiann/KernelSU)添加补丁..."
+            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            git clone https://github.com/ShirkNeko/SukiSU_patch.git
+            cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+            cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
+            cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
+            cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+            cp ./SukiSU_patch/69_hide_stuff.patch ./common/
+            cd ./KernelSU
+            patch -p1 < 10_enable_susfs_for_ksu.patch || true
+            wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/fix_umount.patch
+            patch -p1 < fix_umount.patch || true
+            cd ../common
+            patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
+            patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
@@ -342,16 +366,6 @@ jobs:
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if [ "${{ github.event.inputs.hook_method }}" == "kprobes" ]; then
-            echo "正在开启kprobes钩子..."
-            echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_MANUAL_HOOK=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_KPROBES_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          else
-            echo "正在开启manual/syscall钩子..."
-            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           fi
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -640,8 +654,12 @@ jobs:
           fi
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             KSU_TYPENAME="KSUNext"
+          elif [[ ${{ github.event.inputs.ksu_type }} == "mksu" ]]; then
+            KSU_TYPENAME="MKSU"
+          else
+            KSU_TYPENAME="KSU"
           fi
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
             wget https://raw.githubusercontent.com/cctv18/oppo_oplus_realme_sm8750/refs/heads/main/zram.zip
@@ -740,7 +758,6 @@ jobs:
             - 编译时间: ${{ env.TIME_FORM }}
             - 机型：欧加真骁龙8Elite 6.6.89 Android 15内核通用（基于一加13国际版 6.6.89 版官方OKI源码）
             - 特性：${{ env.KSU_BRANCH }} + SUSFS + 风驰内核
-            - hook模式：${{ github.event.inputs.hook_method }}
             - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}
             - LZ4KD支持：${{ env.lz4kd_enable }}
             - LZ4支持：${{ env.lz4_zstd_enable }}

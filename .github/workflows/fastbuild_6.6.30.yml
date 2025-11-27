@@ -363,7 +363,7 @@ jobs:
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
             echo "正在添加lz4kd补丁…"
             cd kernel_workspace
-            if [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
+            if [ ! -d "SukiSU_patch" ]; then
               git clone https://github.com/ShirkNeko/SukiSU_patch.git
             fi
             cd common

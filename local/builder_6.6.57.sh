@@ -65,12 +65,21 @@ cd "$WORKDIR"
 
 # ===== 安装构建依赖 =====
 echo ">>> 安装构建依赖..."
-sudo apt-mark hold firefox && apt-mark hold libc-bin && apt-mark hold man-db
-sudo rm -rf /var/lib/man-db/auto-update
-sudo apt-get update
-sudo apt-get install --no-install-recommends -y curl bison flex clang binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev cpio
-sudo rm -rf ./llvm.sh && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh
-sudo ./llvm.sh 18 all
+# Function to run a command with sudo if not already root
+su() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
+SU apt-mark hold firefox && apt-mark hold libc-bin && apt-mark hold man-db
+SU rm -rf /var/lib/man-db/auto-update
+SU apt-get update
+SU apt-get install --no-install-recommends -y curl bison flex clang binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev cpio xz-utils tar
+SU rm -rf ./llvm.sh && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh
+SU ./llvm.sh 18 all
 
 # ===== 初始化仓库 =====
 echo ">>> 初始化仓库..."

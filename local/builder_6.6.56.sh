@@ -74,12 +74,12 @@ su() {
     fi
 }
 
-SU apt-mark hold firefox && apt-mark hold libc-bin && apt-mark hold man-db
-SU rm -rf /var/lib/man-db/auto-update
-SU apt-get update
-SU apt-get install --no-install-recommends -y curl bison flex clang binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev cpio xz-utils tar
-SU rm -rf ./llvm.sh && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh
-SU ./llvm.sh 18 all
+su apt-mark hold firefox && apt-mark hold libc-bin && apt-mark hold man-db
+su rm -rf /var/lib/man-db/auto-update
+su apt-get update
+su apt-get install --no-install-recommends -y curl bison flex clang binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev cpio xz-utils tar
+su rm -rf ./llvm.sh && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh
+su ./llvm.sh 18 all
 
 # ===== 初始化仓库 =====
 echo ">>> 初始化仓库..."

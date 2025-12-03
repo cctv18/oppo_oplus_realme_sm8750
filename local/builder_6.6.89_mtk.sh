@@ -66,7 +66,7 @@ cd "$WORKDIR"
 # ===== 安装构建依赖 =====
 echo ">>> 安装构建依赖..."
 # Function to run a command with sudo if not already root
-su() {
+SU() {
     if [ "$(id -u)" -eq 0 ]; then
         "$@"
     else

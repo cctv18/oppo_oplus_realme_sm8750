@@ -171,6 +171,23 @@ elif [[ "$KSU_BRANCH" == [mM] && "$APPLY_SUSFS" == [yY] ]]; then
   git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
   git clone https://github.com/ShirkNeko/SukiSU_patch.git
   cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+  # 临时修复：修复susfs补丁日志输出（由于上游KSU把部分Makefile代码移至Kbuild中，而susfs补丁未同步修改，故需修复susfs补丁修补位点）
+  PATCH_FILE="./KernelSU/10_enable_susfs_for_ksu.patch"
+  if [ -f "$PATCH_FILE" ]; then
+    if grep -q "a/kernel/Makefile" "$PATCH_FILE"; then
+      echo "检测到旧版 Makefile 补丁代码，正在执行修复..."
+      sed -i 's|kernel/Makefile|kernel/Kbuild|g' "$PATCH_FILE"
+      sed -i 's|.*compdb.*|@@ -75,4 +75,13 @@ ccflags-y += -DEXPECTED_HASH=\\"$(KSU_EXPECTED_HASH)\\"|' "$PATCH_FILE"
+      sed -i 's|^ clean:| ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes|' "$PATCH_FILE"
+      sed -i 's|.*make -C.*| ccflags-y += -Wno-declaration-after-statement -Wno-unused-function|' "$PATCH_FILE"
+      echo "补丁修复完成！"
+    else
+      echo "补丁代码已修复至 Kbuild 或不匹配，跳过修改..."
+    fi
+  else
+    echo "未找到KSU补丁！"
+    exit 1
+  fi
   cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
   cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
   cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
@@ -189,6 +206,23 @@ elif [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
   git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
   git clone https://github.com/ShirkNeko/SukiSU_patch.git
   cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+  # 临时修复：修复susfs补丁日志输出（由于上游KSU把部分Makefile代码移至Kbuild中，而susfs补丁未同步修改，故需修复susfs补丁修补位点）
+  PATCH_FILE="./KernelSU/10_enable_susfs_for_ksu.patch"
+  if [ -f "$PATCH_FILE" ]; then
+    if grep -q "a/kernel/Makefile" "$PATCH_FILE"; then
+      echo "检测到旧版 Makefile 补丁代码，正在执行修复..."
+      sed -i 's|kernel/Makefile|kernel/Kbuild|g' "$PATCH_FILE"
+      sed -i 's|.*compdb.*|@@ -75,4 +75,13 @@ ccflags-y += -DEXPECTED_HASH=\\"$(KSU_EXPECTED_HASH)\\"|' "$PATCH_FILE"
+      sed -i 's|^ clean:| ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes|' "$PATCH_FILE"
+      sed -i 's|.*make -C.*| ccflags-y += -Wno-declaration-after-statement -Wno-unused-function|' "$PATCH_FILE"
+      echo "补丁修复完成！"
+    else
+      echo "补丁代码已修复至 Kbuild 或不匹配，跳过修改..."
+    fi
+  else
+    echo "未找到KSU补丁！"
+    exit 1
+  fi
   cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
   cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
   cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/

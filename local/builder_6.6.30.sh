@@ -110,11 +110,50 @@ echo "CONFIG_LOCALVERSION_AUTO=n" >> ./common/arch/arm64/configs/gki_defconfig
 # ===== 拉取 KSU 并设置版本号 =====
 if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   echo ">>> 拉取 SukiSU-Ultra 并设置版本..."
-  curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+  curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
   cd KernelSU
-  KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 37185)
-  export KSU_VERSION=$KSU_VERSION
-  sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+  GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+  echo "当前提交哈希: $GIT_COMMIT_HASH"
+  echo ">>> 正在获取上游 API 版本信息..."
+  for i in {1..3}; do
+      KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/builtin/kernel/Kbuild" | \
+          grep -m1 "KSU_VERSION_API :=" | \
+          awk -F'= ' '{print $2}' | \
+          tr -d '[:space:]')
+      if [ -n "$KSU_API_VERSION" ]; then
+          echo "成功获取 API 版本: $KSU_API_VERSION"
+          break
+      else
+          echo "获取失败，重试中 ($i/3)..."
+          sleep 1
+      fi
+  done
+  if [ -z "$KSU_API_VERSION" ]; then
+      echo -e "无法获取 API 版本，使用默认值 3.1.7..."
+      KSU_API_VERSION="3.1.7"
+  fi
+  export KSU_API_VERSION=$KSU_API_VERSION
+
+  VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@cctv18\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'@cctv18'
+
+  echo ">>> 正在修改 kernel/Kbuild 文件..."
+  sed -i '/define get_ksu_version_full/,/endef/d' kernel/Kbuild
+  sed -i '/KSU_VERSION_API :=/d' kernel/Kbuild
+  sed -i '/KSU_VERSION_FULL :=/d' kernel/Kbuild
+  awk -v def="$VERSION_DEFINITIONS" '
+      /REPO_OWNER :=/ {print; print def; inserted=1; next}
+      1
+      END {if (!inserted) print def}
+  ' kernel/Kbuild > kernel/Kbuild.tmp && mv kernel/Kbuild.tmp kernel/Kbuild
+
+  KSU_VERSION_CODE=$(expr $(git rev-list --count main 2>/dev/null) + 37185 2>/dev/null || echo 114514)
+  echo ">>> 修改完成！验证结果："
+  echo "------------------------------------------------"
+  grep -A10 "REPO_OWNER" kernel/Kbuild | head -n 10
+  echo "------------------------------------------------"
+  grep "KSU_VERSION_FULL" kernel/Kbuild
+  echo ">>> 最终版本字符串: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
+  echo ">>> Version Code: ${KSU_VERSION_CODE}"
 elif [[ "$KSU_BRANCH" == "n" || "$KSU_BRANCH" == "N" ]]; then
   echo ">>> 拉取 KernelSU Next 并设置版本..."
   curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs

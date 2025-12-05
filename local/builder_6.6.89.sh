@@ -334,6 +334,8 @@ if [[ "$APPLY_SUSFS" == [yY] ]]; then
   echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$DEFCONFIG_FILE"
   echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$DEFCONFIG_FILE"
   echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> "$DEFCONFIG_FILE"
+else
+  echo "CONFIG_KSU_SUSFS=n" >> "$DEFCONFIG_FILE"
 fi
 #添加对 Mountify (backslashxx/mountify) 模块的支持
 echo "CONFIG_TMPFS_XATTR=y" >> "$DEFCONFIG_FILE"

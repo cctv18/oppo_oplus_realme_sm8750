@@ -21,8 +21,8 @@ read -p "是否应用 lz4 1.10.0 & zstd 1.5.7 补丁？(y/n，默认：y): " APP
 APPLY_LZ4=${APPLY_LZ4:-y}
 read -p "是否应用 lz4kd 补丁？(y/n，默认：n): " APPLY_LZ4KD
 APPLY_LZ4KD=${APPLY_LZ4KD:-n}
-read -p "是否启用网络功能增强优化配置？(y/n，默认：y): " APPLY_BETTERNET
-APPLY_BETTERNET=${APPLY_BETTERNET:-y}
+read -p "是否启用网络功能增强优化配置？(y/n，默认：n): " APPLY_BETTERNET
+APPLY_BETTERNET=${APPLY_BETTERNET:-n}
 read -p "是否添加 BBR 等一系列拥塞控制算法？(y添加/n禁用/d默认，默认：n): " APPLY_BBR
 APPLY_BBR=${APPLY_BBR:-n}
 read -p "是否启用ADIOS调度器？(y/n，默认：y): " APPLY_ADIOS

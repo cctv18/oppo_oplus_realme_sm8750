@@ -32,6 +32,11 @@ on:
         options:
           - 'true'
           - 'false'
+      HYMOFS_enable:
+        description: '⚠️实验性⚠️是否安装HYMOFS补丁'
+        required: true
+        type: boolean
+        default: 'false'
       lz4_enable:
         description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁及 LZ4KD 补丁'
         required: true
@@ -377,7 +382,13 @@ jobs:
             sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
-          
+      - name: 应用 HYMOFS 补丁
+        if: inputs.HYMOFS_enable
+        run: |
+          cd kernel_workspace/common
+          wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs.patch
+          patch -p1 -F 3 < hymofs.patch
+          echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         if: inputs.lz4_enable
         run: |

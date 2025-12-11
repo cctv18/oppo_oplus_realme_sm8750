@@ -32,6 +32,11 @@ on:
         options:
           - 'true'
           - 'false'
+      HYMOFS_enable:
+        description: '⚠️实验性⚠️是否安装HYMOFS补丁'
+        required: true
+        type: boolean
+        default: 'false'
       lz4_enable:
         description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁及 LZ4KD 补丁'
         required: true
@@ -369,7 +374,13 @@ jobs:
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
-          
+      - name: 应用 HYMOFS 补丁
+        if: inputs.HYMOFS_enable
+        run: |
+          cd kernel_workspace/common
+          wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs.patch
+          patch -p1 -F 3 < hymofs.patch
+          echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         if: inputs.lz4_enable
         run: |
@@ -782,6 +793,7 @@ jobs:
             - 特性：${{ env.KSU_TYPENAME }} + 风驰内核
             - susfs支持：${{ github.event.inputs.susfs_enable }}
             - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}
+            - HYMOFS支持：${{ github.event.inputs.HYMOFS_enable }}
             - LZ4支持：${{ github.event.inputs.lz4_enable }}
             - LZ4KD支持：${{ github.event.inputs.lz4kd_enable }}
             - 网络功能增强：${{ github.event.inputs.better_net }}

@@ -27,11 +27,8 @@ on:
       kpm_enable:
         description: '是否开启kpm(仅对sukisu生效; 可能轻微增加耗电，不需要可保持默认关闭)'
         required: true
-        type: choice
+        type: boolean
         default: 'false'
-        options:
-          - 'true'
-          - 'false'
       lz4_enable:
         description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁及 LZ4KD 补丁'
         required: true
@@ -54,11 +51,8 @@ on:
       better_net:
         description: '是否开启网络功能拓展配置(用于为ipset及需要iptables等高级网络功能内核支持的程序提供支持)'
         required: true
-        type: choice
+        type: boolean
         default: 'false'
-        options:
-          - 'true'
-          - 'false'
       adios_enable:
         description: '是否启用ADIOS IO调度器支持(提升IO读写性能)'
         required: true

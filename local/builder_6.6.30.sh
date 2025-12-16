@@ -240,8 +240,6 @@ elif [[ "$KSU_BRANCH" == [mM] && "$APPLY_SUSFS" == [yY] ]]; then
   #为MKSU修正susfs 2.0.0补丁
   wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/mksu_supercalls.patch
   patch -p1 < mksu_supercalls.patch || true
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/fix_umount.patch
-  patch -p1 < fix_umount.patch || true
   cd ../common
   patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
   #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
@@ -274,8 +272,6 @@ elif [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
   cp ./SukiSU_patch/69_hide_stuff.patch ./common/
   cd ./KernelSU
   patch -p1 < 10_enable_susfs_for_ksu.patch || true
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/fix_umount.patch
-  patch -p1 < fix_umount.patch || true
   cd ../common
   patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
   #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题

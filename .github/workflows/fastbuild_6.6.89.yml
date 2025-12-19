@@ -68,6 +68,11 @@ on:
         required: true
         type: boolean
         default: 'true'
+      HYMOFS_enable:
+        description: '是否启用HYMOFS(提供文件系统增强功能)'
+        required: true
+        type: boolean
+        default: 'false'
       ccache_debug:
         description: '是否上传 Ccache调试日志(用于调试, 无需要不必开启)'
         required: true
@@ -358,6 +363,22 @@ jobs:
             cd ../common
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
+          fi
+
+      - name: 应用 HYMOFS 补丁
+        if: inputs.HYMOFS_enable
+        run: |
+          cd kernel_workspace/common
+          if [[ ${{ github.event.inputs.susfs_enable }} == 'true' ]]; then
+            echo "正在应用 HYMOFS with SUSFS 补丁..."
+            wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs_with_susfs.patch
+            patch -p1 -F 3 < hymofs_with_susfs.patch || true
+            echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
+          else
+            echo "正在应用 HYMOFS 补丁..."
+            wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs.patch
+            patch -p1 -F 3 < hymofs.patch || true
+            echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
           fi
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁

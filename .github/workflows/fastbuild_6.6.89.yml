@@ -371,12 +371,12 @@ jobs:
           cd kernel_workspace/common
           if [[ ${{ github.event.inputs.susfs_enable }} == 'true' ]]; then
             echo "正在应用 HYMOFS with SUSFS 补丁..."
-            wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs_with_susfs.patch
+            wget https://raw.githubusercontent.com/Anatdx/HymoFS/android15_6.6/patch/hymofs_with_susfs.patch
             patch -p1 -F 3 < hymofs_with_susfs.patch || true
             echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
           else
             echo "正在应用 HYMOFS 补丁..."
-            wget https://raw.githubusercontent.com/Anatdx/HymoFS/refs/heads/main/patch/hymofs.patch
+            wget https://raw.githubusercontent.com/Anatdx/HymoFS/android15_6.6/patch/hymofs.patch
             patch -p1 -F 3 < hymofs.patch || true
             echo "CONFIG_HYMOFS=y" >> ./arch/arm64/configs/gki_defconfig
           fi

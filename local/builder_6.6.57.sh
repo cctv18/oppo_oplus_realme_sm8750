@@ -412,7 +412,7 @@ if [[ "$APPLY_BBR" == "y" || "$APPLY_BBR" == "Y" || "$APPLY_BBR" == "d" || "$APP
   echo "CONFIG_TCP_CONG_HTCP=y" >> "$DEFCONFIG_FILE"
   echo "CONFIG_TCP_CONG_BRUTAL=y" >> "$DEFCONFIG_FILE"
   if [[ "$APPLY_BBR" == "d" || "$APPLY_BBR" == "D" ]]; then
-    echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> "$DEFCONFIG_FILE"
+    echo "CONFIG_DEFAULT_TCP_CONG=westwood" >> "$DEFCONFIG_FILE"
   else
     echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> "$DEFCONFIG_FILE"
   fi

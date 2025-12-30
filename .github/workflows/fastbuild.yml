@@ -485,7 +485,7 @@ jobs:
           fi
 
       - name: 修复部分版本源码中 vma 导致的编译错误
-        if: inputs.kernel_version != '6.6.89' && inputs.kernel_version != '6.6.66'
+        if: inputs.susfs_enable && (inputs.kernel_version != '6.6.89' && inputs.kernel_version != '6.6.66')
         run: |
             cd kernel_workspace/common
             # 临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
@@ -503,6 +503,11 @@ jobs:
           cd ./common
           git apply -p1 < 001-lz4.patch || true
           patch -p1 < 002-zstd.patch || true
+          # MTK 相关 Kernel 特判 (Patch 001-lz4-clearMake.patch)
+          if [[ "${{ github.event.inputs.kernel_version }}" == "6.6.50" || "${{ github.event.inputs.kernel_version }}" == "6.6.89_mtk" ]]; then
+            cp ../oppo_oplus_realme_sm8750/zram_patch/001-lz4-clearMake.patch .
+            git apply -p1 < 001-lz4-clearMake.patch || true
+          fi
 
       - name: 应用 lz4kd 补丁
         if: inputs.lz4kd_enable
@@ -857,9 +862,9 @@ jobs:
             wget https://raw.githubusercontent.com/cctv18/oppo_oplus_realme_sm8750/refs/heads/main/zram.zip
           fi
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSU_TYPENAME }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ github.event.inputs.kernel_suffix }}.zip ./*
+            zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ github.event.inputs.kernel_suffix }}.zip ./*
           else
-            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSU_TYPENAME }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ env.KERNEL_NAME }}.zip ./*
+            zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ env.KERNEL_NAME }}.zip ./*
           fi
       
       - name: 上传 Ccache 调试日志
@@ -954,6 +959,4 @@ jobs:
           draft: false
           prerelease: false
           files: |
-
             release_zips/AnyKernel3_*.zip
-

@@ -73,7 +73,7 @@ on:
           - 'ksu'
           - 'none'
       susfs_enable:
-        description: '是否开启susfs(用于增强隐藏环境挂载功能; 可能轻微增加耗电，上游更新导致不稳定时或不需要可关闭)'
+        description: '是否开启susfs(用于增强隐藏环境挂载功能; 可能轻微增加耗电，上游更新导致不稳定时或不需要可关闭，KernelSU 分支为 `none` 时不生效)'
         required: true
         type: boolean
         default: true
@@ -483,7 +483,14 @@ jobs:
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION_MANJOR_MINOR }}.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
-      
+
+      - name: 修复部分版本源码中 vma 导致的编译错误
+        if: inputs.kernel_version != '6.6.89' && inputs.kernel_version != '6.6.66'
+        run: |
+            cd kernel_workspace/common
+            # 临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
+            sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
+
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         if: inputs.lz4_enable
         run: |
@@ -913,19 +920,22 @@ jobs:
           name: "${{ env.TAG_HEAD }}-${{ env.FULL_VERSION }}"
           body: |
             ### 📱 欧加真 ${{ needs.build.outputs.ksutype }} SM8750 通用内核 | 构建信息
-            - 内核版本号: Linux version ${{ github.event.inputs.kernel_version }}
-            - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：${{ needs.build.outputs.kernel_description }}
-            - 特性：${{ needs.build.outputs.ksutype }} + 风驰内核
-            - susfs支持：${{ github.event.inputs.susfs_enable }}
-            - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}
-            - LZ4支持：${{ github.event.inputs.lz4_enable }}
-            - LZ4KD支持：${{ github.event.inputs.lz4kd_enable }}
-            - 网络功能增强：${{ github.event.inputs.better_net }}
-            - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
-            - ADIOS IO调度器支持：${{ github.event.inputs.adios_enable }}
-            - Re-Kernel支持：${{ github.event.inputs.rekernel_enable }}
-            - 内核级基带保护支持：${{ github.event.inputs.baseband_guard }}
+            - 内核版本号: `${{ github.event.inputs.kernel_version }}`
+            - 编译时间: `${{ env.TIME_FORM }}`
+            - 机型：`${{ needs.build.outputs.kernel_description }}`
+            - 特性：`${{ needs.build.outputs.ksutype }}` + 风驰内核
+            - susfs支持：`${{ github.event.inputs.susfs_enable }}`
+            - KPM支持 (仅对sukisu生效)：`${{ github.event.inputs.kpm_enable }}`
+            - LZ4支持：`${{ github.event.inputs.lz4_enable }}`
+            - LZ4KD支持：`${{ github.event.inputs.lz4kd_enable }}`
+            - 网络功能增强：`${{ github.event.inputs.better_net }}`
+            - BBR/Brutal 等拥塞控制算法支持：`${{ github.event.inputs.bbr_enable }}`
+            - ADIOS IO调度器支持：`${{ github.event.inputs.adios_enable }}`
+            - Re-Kernel支持：`${{ github.event.inputs.rekernel_enable }}`
+            - 内核级基带保护支持：`${{ github.event.inputs.baseband_guard }}`
+            - 内核构建签名: `${{ github.event.inputs.kernel_buiider }}`
+            - 内核内显时间: `${{ github.event.inputs.kernel_build_time }}`
+            - 零宽空格越权漏洞修复: `${{ github.event.inputs.zwsp_bypass_fix }}`
             - SukiSU Ultra 管理器下载：[SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
             - ReSukiSU 管理器下载：[ReSukiSU](https://github.com/ReSukiSU/ReSukiSU/releases)
             - KernelSU Next 管理器下载：[KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next/releases)
@@ -944,4 +954,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
+
             release_zips/AnyKernel3_*.zip
+

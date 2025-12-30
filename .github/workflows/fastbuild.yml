@@ -78,7 +78,7 @@ on:
         type: boolean
         default: true
       kpm_enable:
-        description: '是否开启kpm(仅对sukisu生效; 可能轻微增加耗电，不需要可保持默认关闭)'
+        description: '是否开启 KPM (仅对 SukiSU/ReSukiSU 生效; 可能轻微增加耗电，不需要可保持默认关闭)'
         required: true
         type: boolean
         default: false
@@ -122,7 +122,7 @@ on:
         type: boolean
         default: true
       zwsp_bypass_fix:
-        description: '是否修复零宽空格越权漏洞(方案来自 (https://t.me/newqianzhuang/52?comment=59) 可能会造成文件查找性能下降)'
+        description: '是否修复零宽空格越权漏洞[方案来自 (https://t.me/newqianzhuang/52?comment=59) 可能会造成文件查找性能下降]'
         required: true
         type: boolean
         default: true
@@ -836,7 +836,7 @@ jobs:
 
       - name: 应用KPM并修补内核
         run: |
-          if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
+          if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ( "${{ github.event.inputs.ksu_type }}" == "sukisu" || "${{ github.event.inputs.ksu_type }}" == "resukisu" ) ]]; then
             echo "正在应用KPM并修补内核..."
             cd kernel_workspace/common/out/arch/arm64/boot
             curl -LO https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.12.2/patch_linux
@@ -959,4 +959,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
+
             release_zips/AnyKernel3_*.zip
+

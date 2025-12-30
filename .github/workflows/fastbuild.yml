@@ -339,7 +339,9 @@ jobs:
             cd ./KernelSU
             GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
             echo "当前提交哈希: $GIT_COMMIT_HASH"
-            KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
+            export COUNT_BRANCH="new-manager"
+            git fetch origin $COUNT_BRANCH:$COUNT_BRANCH
+            KSU_VERSION=$(expr $(git rev-list --count $COUNT_BRANCH) + 30700 2>/dev/null || echo 114514)
             # 尝试最多 3 次获取 KernelSU API 版本号
             for i in {1..3}; do
               # 从远程 Kbuild 中提取 KSU_API_VERSION
@@ -949,4 +951,3 @@ jobs:
           prerelease: false
           files: |
             release_zips/AnyKernel3_*.zip
-

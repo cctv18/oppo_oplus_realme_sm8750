@@ -151,7 +151,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      ksuver: ${{ steps.ksu_version.outputs.ksuver }}
+      ksuver: ${{ steps.add_kernelsu.outputs.ksuver }}
       ksutype: ${{ steps.init.outputs.ksutype }}
       kernel_description: ${{ steps.init.outputs.kernel_description }}
     steps:
@@ -279,7 +279,7 @@ jobs:
       
       - name: 添加 ${{ env.KSU_TYPENAME }}
         if: inputs.ksu_type != 'none'
-        id: ksu_version
+        id: add_kernelsu
         run: |
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
@@ -327,13 +327,8 @@ jobs:
               # 如果未找到插入点，在文件末尾追加
               END {if (!inserted) print def}
             ' kernel/Kbuild > kernel/Kbuild.tmp && mv kernel/Kbuild.tmp kernel/Kbuild
-
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
             KSU_VERSION=$(expr $(git rev-list --count main) + 37185 2>/dev/null || echo 114514)
-            # 存储版本号到 GitHub 环境变量
-            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
-
             # 验证修改结果
             grep -A10 "REPO_OWNER" kernel/Kbuild  # 检查插入点后的内容
             grep "KSU_VERSION_FULL" kernel/Kbuild # 确认版本定义存在
@@ -344,7 +339,7 @@ jobs:
             cd ./KernelSU
             GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
             echo "当前提交哈希: $GIT_COMMIT_HASH"
-            KSU_VERSION=$(expr $(git rev-list --count main) + 37185 2>/dev/null || echo 114514)
+            KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
             # 尝试最多 3 次获取 KernelSU API 版本号
             for i in {1..3}; do
               # 从远程 Kbuild 中提取 KSU_API_VERSION
@@ -361,8 +356,6 @@ jobs:
             [ -z "$KSU_API_VERSION" ] && KSU_API_VERSION="3.1.7"
             # 将 API 版本号存储到 GitHub 环境变量
             echo "KSU_API_VERSION=$KSU_API_VERSION" >> $GITHUB_ENV
-            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             # ReSukiSU 开发团队要求内核版本保留 ReSukiSU 标识，故不作版本号修改
             echo "ReSukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@ReSukiSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
@@ -370,8 +363,6 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
             cd KernelSU-Next
             KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/pershoot/KernelSU-Next/commits?sha=next&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 10200)
-            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=11998/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
             #为KernelSU Next添加WildKSU管理器支持
             cd ../common/drivers/kernelsu
@@ -382,18 +373,16 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
             cd ./KernelSU
             KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/5ec1cff/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 30000)
-            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
           else
             echo "正在配置原版 KernelSU (tiann/KernelSU)..."
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
             cd ./KernelSU
             KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/tiann/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 30000)
-            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
           fi
+          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
       
       - name: 应用 ${{ env.KSU_TYPENAME }} & SUSFS 补丁
         if: inputs.susfs_enable && inputs.ksu_type != 'none'
@@ -864,7 +853,7 @@ jobs:
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
             zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ github.event.inputs.kernel_suffix }}.zip ./*
           else
-            zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ env.KERNEL_NAME }}.zip ./*
+            zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ env.KSUVER }}_${{ github.event.inputs.kernel_version }}_A${ANDROID_VERSION#android}_${{ env.KERNEL_NAME }}.zip ./*
           fi
       
       - name: 上传 Ccache 调试日志
@@ -959,6 +948,5 @@ jobs:
           draft: false
           prerelease: false
           files: |
-
             release_zips/AnyKernel3_*.zip
 

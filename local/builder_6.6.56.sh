@@ -15,7 +15,7 @@ read -p "是否启用susfs？(y/n，默认：y): " APPLY_SUSFS
 APPLY_SUSFS=${APPLY_SUSFS:-y}
 read -p "是否启用 KPM？(y/n，默认：n): " USE_PATCH_LINUX
 USE_PATCH_LINUX=${USE_PATCH_LINUX:-n}
-read -p "KSU分支版本(y=SukiSU Ultra, n=KernelSU Next, m=MKSU, k=KSU, 默认：y): " KSU_BRANCH
+read -p "KSU分支版本(y=SukiSU Ultra, r=ReSukiSU, n=KernelSU Next, m=MKSU, k=KSU, l=lkm模式(无内置KSU), 默认：y): " KSU_BRANCH
 KSU_BRANCH=${KSU_BRANCH:-y}
 read -p "是否应用 lz4 1.10.0 & zstd 1.5.7 补丁？(y/n，默认：y): " APPLY_LZ4
 APPLY_LZ4=${APPLY_LZ4:-y}
@@ -34,12 +34,16 @@ APPLY_BBG=${APPLY_BBG:-y}
 
 if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   KSU_TYPE="SukiSU Ultra"
+elif [[ "$KSU_BRANCH" == "r" || "$KSU_BRANCH" == "R" ]]; then
+  KSU_TYPE="ReSukiSU"
 elif [[ "$KSU_BRANCH" == "n" || "$KSU_BRANCH" == "N" ]]; then
   KSU_TYPE="KernelSU Next"
 elif [[ "$KSU_BRANCH" == "m" || "$KSU_BRANCH" == "M" ]]; then
   KSU_TYPE="MKSU"
-else
+elif [[ "$KSU_BRANCH" == "k" || "$KSU_BRANCH" == "K" ]]; then
   KSU_TYPE="KernelSU"
+else
+  KSU_TYPE="no KSU"
 fi
 
 echo
@@ -77,7 +81,7 @@ SU() {
 SU apt-mark hold firefox && apt-mark hold libc-bin && apt-mark hold man-db
 SU rm -rf /var/lib/man-db/auto-update
 SU apt-get update
-SU apt-get install --no-install-recommends -y curl bison flex clang binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev cpio xz-utils tar
+SU apt-get install --no-install-recommends -y curl bison flex clang binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev cpio xz-utils tar unzip
 SU rm -rf ./llvm.sh && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh
 SU ./llvm.sh 18 all
 
@@ -154,6 +158,52 @@ if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   grep "KSU_VERSION_FULL" kernel/Kbuild
   echo ">>> 最终版本字符串: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
   echo ">>> Version Code: ${KSU_VERSION_CODE}"
+elif [[ "$KSU_BRANCH" == "r" || "$KSU_BRANCH" == "R" ]]; then
+  echo ">>> 拉取 ReSukiSU 并设置版本..."
+  curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s builtin
+  cd KernelSU
+  GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+  echo "当前提交哈希: $GIT_COMMIT_HASH"
+  echo ">>> 正在获取上游 API 版本信息..."
+  for i in {1..3}; do
+      KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/builtin/kernel/Kbuild" | \
+          grep -m1 "KSU_VERSION_API :=" | \
+          awk -F'= ' '{print $2}' | \
+          tr -d '[:space:]')
+      if [ -n "$KSU_API_VERSION" ]; then
+          echo "成功获取 API 版本: $KSU_API_VERSION"
+          break
+      else
+          echo "获取失败，重试中 ($i/3)..."
+          sleep 1
+      fi
+  done
+  if [ -z "$KSU_API_VERSION" ]; then
+      echo -e "无法获取 API 版本，使用默认值 3.1.7..."
+      KSU_API_VERSION="3.1.7"
+  fi
+  export KSU_API_VERSION=$KSU_API_VERSION
+
+  VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@cctv18\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'@cctv18'
+
+  echo ">>> 正在修改 kernel/Kbuild 文件..."
+  sed -i '/define get_ksu_version_full/,/endef/d' kernel/Kbuild
+  sed -i '/KSU_VERSION_API :=/d' kernel/Kbuild
+  sed -i '/KSU_VERSION_FULL :=/d' kernel/Kbuild
+  awk -v def="$VERSION_DEFINITIONS" '
+      /REPO_OWNER :=/ {print; print def; inserted=1; next}
+      1
+      END {if (!inserted) print def}
+  ' kernel/Kbuild > kernel/Kbuild.tmp && mv kernel/Kbuild.tmp kernel/Kbuild
+
+  KSU_VERSION_CODE=$(expr $(git rev-list --count main 2>/dev/null) + 30700 2>/dev/null || echo 114514)
+  echo ">>> 修改完成！验证结果："
+  echo "------------------------------------------------"
+  grep -A10 "REPO_OWNER" kernel/Kbuild | head -n 10
+  echo "------------------------------------------------"
+  grep "KSU_VERSION_FULL" kernel/Kbuild
+  echo ">>> 最终版本字符串: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
+  echo ">>> Version Code: ${KSU_VERSION_CODE}"
 elif [[ "$KSU_BRANCH" == "n" || "$KSU_BRANCH" == "N" ]]; then
   echo ">>> 拉取 KernelSU Next 并设置版本..."
   curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
@@ -173,19 +223,21 @@ elif [[ "$KSU_BRANCH" == "m" || "$KSU_BRANCH" == "M" ]]; then
   cd ./KernelSU
   KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/5ec1cff/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 30000)
   sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
-else
+elif [[ "$KSU_BRANCH" == "k" || "$KSU_BRANCH" == "K" ]]; then
   echo "正在配置原版 KernelSU (tiann/KernelSU)..."
   curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
   cd ./KernelSU
   KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/tiann/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 30000)
   sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
+else
+  echo "已选择无内置KernelSU模式，跳过配置..."
 fi
 
 # ===== 克隆补丁仓库&应用 SUSFS 补丁 =====
 echo ">>> 克隆补丁仓库..."
 cd "$WORKDIR/kernel_workspace"
 echo ">>> 应用 SUSFS&hook 补丁..."
-if [[ "$KSU_BRANCH" == [yY] && "$APPLY_SUSFS" == [yY] ]]; then
+if [[ "$KSU_BRANCH" == [yYrR] && "$APPLY_SUSFS" == [yY] ]]; then
   git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
   wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
   cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/

@@ -10,15 +10,17 @@ on:
   workflow_dispatch:
     inputs:
       ksu_type:
-        description: 'KernelSU分支(SukiSU Ultra/KernelSU Next/MKSU/KernelSU(原版),默认SukiSU Ultra)'
+        description: 'KernelSU分支(SukiSU Ultra/ReSukiSU/KernelSU Next/MKSU/KSU(原版)/无内置KSU,默认SukiSU Ultra)'
         required: true
         type: choice
         default: 'sukisu'
         options:
           - 'sukisu'
+          - 'resukisu'
           - 'ksunext'
           - 'mksu'
           - 'ksu'
+          - 'none'
       susfs_enable:
         description: '是否开启susfs(用于增强隐藏环境挂载功能; 可能轻微增加耗电，上游更新导致不稳定时或不需要可关闭)'
         required: true
@@ -233,6 +235,62 @@ jobs:
             grep -A10 "REPO_OWNER" kernel/Kbuild  # 检查插入点后的内容
             grep "KSU_VERSION_FULL" kernel/Kbuild # 确认版本定义存在
             echo "SukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
+          elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
+            echo "正在配置ReSukiSU..."
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s builtin
+            cd ./KernelSU
+            # 获取当前 Git 提交的短哈希 (8位)
+            GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+            echo "当前提交哈希: $GIT_COMMIT_HASH"
+            export KSU_VERSION=$KSU_VERSION
+            # 尝试最多 3 次获取 KernelSU API 版本号
+            for i in {1..3}; do
+              # 从远程 Kbuild 中提取 KSU_API_VERSION
+              KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/builtin/kernel/Kbuild" | 
+                # 查找第一个包含版本定义的行
+                grep -m1 "KSU_VERSION_API :=" | 
+                # 提取等号后的值
+                awk -F'= ' '{print $2}' | 
+                # 删除所有空白字符
+                tr -d '[:space:]')
+              # 如果成功获取到版本号则跳出循环，否则等待 1 秒后重试
+              [ -n "$KSU_API_VERSION" ] && break || sleep 1
+            done
+            # 如果获取失败，使用默认版本号 3.1.7
+            [ -z "$KSU_API_VERSION" ] && KSU_API_VERSION="3.1.7"
+            # 将 API 版本号存储到 GitHub 环境变量
+            echo "KSU_API_VERSION=$KSU_API_VERSION" >> $GITHUB_ENV
+            # 创建版本定义模板&版本格式函数: 使用获取的提交哈希和固定后缀
+            # KSU_VERSION_API: API 版本定义
+            # KSU_VERSION_FULL: 完整版本定义
+            VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@cctv18\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'@cctv18'
+            # 清理内核 Kbuild 中的旧版本定义
+            # 删除版本函数
+            sed -i '/define get_ksu_version_full/,/endef/d' kernel/Kbuild
+            # 删除 API 版本定义
+            sed -i '/KSU_VERSION_API :=/d' kernel/Kbuild
+            # 删除完整版本定义
+            sed -i '/KSU_VERSION_FULL :=/d' kernel/Kbuild
+            # 在 REPO_OWNER 行后插入新版本定义
+            awk -v def="$VERSION_DEFINITIONS" '
+              # 当找到 REPO_OWNER 行时，插入版本定义并设置标记
+              /REPO_OWNER :=/ {print; print def; inserted=1; next}
+              # 打印所有行
+              1
+              # 如果未找到插入点，在文件末尾追加
+              END {if (!inserted) print def}
+            ' kernel/Kbuild > kernel/Kbuild.tmp && mv kernel/Kbuild.tmp kernel/Kbuild
+
+            # 生成自定义版本号（基于提交计数）, 失败时使用 114514
+            KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
+            # 存储版本号到 GitHub 环境变量
+            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
+
+            # 验证修改结果
+            grep -A10 "REPO_OWNER" kernel/Kbuild  # 检查插入点后的内容
+            grep "KSU_VERSION_FULL" kernel/Kbuild # 确认版本定义存在
+            echo "ReSukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             echo "正在配置KernelSU Next..."
             curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
@@ -256,7 +314,7 @@ jobs:
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             echo "正在配置原版 KernelSU (tiann/KernelSU)..."
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
             cd ./KernelSU
@@ -264,6 +322,8 @@ jobs:
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
+          else
+            echo "已选择无内置KernelSU模式，跳过KernelSU配置..."
           fi
 
       - name: 应用 KernelSU & SUSFS 补丁
@@ -272,6 +332,18 @@ jobs:
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在添加SukiSU Ultra补丁..."
+            git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
+            cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
+            cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
+            cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+            cd ./common
+            patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
+            #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
+            sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
+            patch -p1 < 69_hide_stuff.patch || true
+          elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
+            echo "正在添加ReSukiSU补丁..."
             git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
             wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
@@ -329,7 +401,7 @@ jobs:
             #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
             sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             echo "正在为原版 KernelSU (tiann/KernelSU)添加补丁..."
             git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
             wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
@@ -361,6 +433,8 @@ jobs:
             #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
             sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
+          else
+            echo "已选择无内置KernelSU模式，跳过susfs配置..."
           fi
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
@@ -691,12 +765,16 @@ jobs:
           fi
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
+          elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
+            KSU_TYPENAME="ReSukiSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             KSU_TYPENAME="KSUNext"
           elif [[ ${{ github.event.inputs.ksu_type }} == "mksu" ]]; then
             KSU_TYPENAME="MKSU"
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             KSU_TYPENAME="KSU"
+          else
+            KSU_TYPENAME="none"
           fi
           if [[ "${{ github.event.inputs.lz4kd_enable }}" == "true" ]]; then
             wget https://raw.githubusercontent.com/cctv18/oppo_oplus_realme_sm8750/refs/heads/main/zram.zip
@@ -754,12 +832,16 @@ jobs:
           echo "TAG_HEAD=$TAG_HEAD" >> $GITHUB_ENV
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU Ultra"
+          elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
+            KSU_TYPENAME="ReSukiSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             KSU_TYPENAME="KernelSU Next"
           elif [[ ${{ github.event.inputs.ksu_type }} == "mksu" ]]; then
             KSU_TYPENAME="MKSU"
-          else
+          elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             KSU_TYPENAME="KSU"
+          else
+            KSU_TYPENAME="无内置KSU"
           fi
           echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
          

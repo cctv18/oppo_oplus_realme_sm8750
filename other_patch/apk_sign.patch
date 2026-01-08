@@ -2,12 +2,14 @@ diff --git a/kernel/apk_sign.c b/kernel/apk_sign.c
 index 3f2ae2d4..862e471b 100644
 --- a/kernel/apk_sign.c	2026-01-05 21:32:57.870040182 +0800
 +++ a/kernel/apk_sign.c	2026-01-07 05:34:13.644884315 +0800
-@@ -308,5 +308,7 @@
+@@ -376,7 +376,9 @@
+ 		char hash[65] = {0};
  
- bool is_manager_apk(char *path)
- {
--	return check_v2_signature(path, EXPECTED_MANAGER_SIZE, EXPECTED_MANAGER_HASH);
-+	return (check_v2_signature(path, EXPECTED_MANAGER_SIZE, EXPECTED_MANAGER_HASH)
+ 		if (sscanf(p, "%x:%64[^,]", &size, hash) == 2) {
+-			if (check_v2_signature(path, size, hash)) {
++			if (check_v2_signature(path, size, hash) 
 +			|| check_v2_signature(path, 0x338, "f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f") // pershoot Manager
-+			|| check_v2_signature(path, 0x381, "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4")); // Wild_KSU Manager
- }
++			|| check_v2_signature(path, 0x381, "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4")){ // Wild_KSU Manager 
+ 				pr_info("KernelSU: matched manager APK: %s (size=0x%x, hash=%s)\n",
+ 					path, size, hash);
+ 				return true;

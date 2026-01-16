@@ -31,6 +31,8 @@ read -p "是否启用Re-Kernel？(y/n，默认：n): " APPLY_REKERNEL
 APPLY_REKERNEL=${APPLY_REKERNEL:-n}
 read -p "是否启用内核级基带保护？(y/n，默认：y): " APPLY_BBG
 APPLY_BBG=${APPLY_BBG:-y}
+read -p "是否启用 HymoFS？(y/n，默认：y): " APPLY_HYMOFS
+APPLY_HYMOFS=${APPLY_HYMOFS:-y}
 
 if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   KSU_TYPE="SukiSU Ultra"
@@ -391,6 +393,20 @@ fi
 #添加对 Mountify (backslashxx/mountify) 模块的支持
 echo "CONFIG_TMPFS_XATTR=y" >> "$DEFCONFIG_FILE"
 echo "CONFIG_TMPFS_POSIX_ACL=y" >> "$DEFCONFIG_FILE"
+
+# ===== 应用 HymoFS 补丁 =====
+if [[ "$APPLY_HYMOFS" == "y" || "$APPLY_HYMOFS" == "Y" ]]; then
+  echo ">>> 应用 HymoFS 补丁..."
+  cd "$WORKDIR/kernel_workspace/common"
+
+  echo "  [*] 注入 HymoFS 代码..."
+  curl -LSs https://raw.githubusercontent.com/Anatdx/oppo_oplus_realme_sm8750/refs/heads/main/local/setup.sh | bash -s defconfig ./arch/arm64/configs/gki_defconfig
+  
+  echo "  [*] HymoFS 代码注入完成！"
+
+  cd "$WORKDIR/kernel_workspace"
+fi
+
 
 # 开启O2编译优化配置
 echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> "$DEFCONFIG_FILE"

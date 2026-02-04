@@ -168,13 +168,13 @@ if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   echo ">>> Version Code: ${KSU_VERSION_CODE}"
 elif [[ "$KSU_BRANCH" == "r" || "$KSU_BRANCH" == "R" ]]; then
   echo ">>> 拉取 ReSukiSU 并设置版本..."
-  curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s builtin
+  curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
   cd KernelSU
   GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
   echo "当前提交哈希: $GIT_COMMIT_HASH"
   echo ">>> 正在获取上游 API 版本信息..."
   for i in {1..3}; do
-      KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/builtin/kernel/Kbuild" | \
+      KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/Kbuild" | \
           grep -m1 "KSU_VERSION_API :=" | \
           awk -F'= ' '{print $2}' | \
           tr -d '[:space:]')

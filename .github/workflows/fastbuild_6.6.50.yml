@@ -241,7 +241,7 @@ jobs:
             echo "SukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
             echo "正在配置ReSukiSU..."
-            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s builtin
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s main
             cd ./KernelSU
             # 获取当前 Git 提交的短哈希 (8位)
             GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
@@ -250,7 +250,7 @@ jobs:
             # 尝试最多 3 次获取 KernelSU API 版本号
             for i in {1..3}; do
               # 从远程 Kbuild 中提取 KSU_API_VERSION
-              KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/builtin/kernel/Kbuild" | 
+              KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/Kbuild" | 
                 # 查找第一个包含版本定义的行
                 grep -m1 "KSU_VERSION_API :=" | 
                 # 提取等号后的值

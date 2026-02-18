@@ -192,10 +192,10 @@ else
 fi
 
 # ===== 克隆补丁仓库&应用 SUSFS 补丁 =====
-echo ">>> 克隆补丁仓库..."
 cd "$WORKDIR/kernel_workspace"
 echo ">>> 应用 SUSFS&hook 补丁..."
-if [[ "$KSU_BRANCH" == [yYrR] && "$APPLY_SUSFS" == [yY] ]]; then
+if [[ "$APPLY_SUSFS" == [yY] ]]; then
+  echo ">>> 克隆补丁仓库..."
   git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-android15-6.6
   wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
   cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
@@ -204,32 +204,16 @@ if [[ "$KSU_BRANCH" == [yYrR] && "$APPLY_SUSFS" == [yY] ]]; then
   cd ./common
   patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
   patch -p1 -F 3 < 69_hide_stuff.patch || true
-elif [[ "$KSU_BRANCH" == [nN] && "$APPLY_SUSFS" == [yY] ]]; then
-  git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-android15-6.6
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
-  cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
-  cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-  cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-  cd ./common
-  patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-  patch -p1 -N -F 3 < 69_hide_stuff.patch || true
-elif [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
-  git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-android15-6.6
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
-  cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
-  cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
-  cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-  cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-  cd ./KernelSU
-  patch -p1 < 10_enable_susfs_for_ksu.patch || true
-  cd ../common
-  patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-  patch -p1 -N -F 3 < 69_hide_stuff.patch || true
 else
   echo ">>> 未开启susfs，跳过susfs补丁配置..."
-  cd common
 fi
-cd ../
+cd "$WORKDIR/kernel_workspace"
+if [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
+  cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+  cd ./KernelSU
+  patch -p1 < 10_enable_susfs_for_ksu.patch || true
+fi
+cd "$WORKDIR/kernel_workspace"
 
 # ===== 应用 LZ4 & ZSTD 补丁 =====
 if [[ "$APPLY_LZ4" == "y" || "$APPLY_LZ4" == "Y" ]]; then

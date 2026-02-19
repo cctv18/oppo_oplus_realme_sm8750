@@ -5,6 +5,7 @@ env:
   ANDROID_VERSION: 'android15'
   KERNEL_VERSION: '6.6'
   KERNEL_NAME: 'android15-8-g29d86c5fc9dd-abogki428889875-4k'
+  CCACHE_KEY: ccache-neov4-6.6.89
 
 on:
   workflow_dispatch:
@@ -73,6 +74,11 @@ on:
         required: true
         type: boolean
         default: 'true'
+      ccache_update:
+        description: '更新ccache缓存(将本次编译生成的ccache缓存覆盖至仓库缓存，在更改编译配置、源码或需要刷新缓存时开启)'
+        required: true
+        type: boolean
+        default: 'false'
       ccache_debug:
         description: '是否上传 Ccache调试日志(用于调试, 无需要不必开启)'
         required: true
@@ -89,6 +95,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ksuver: ${{ steps.ksu_version.outputs.ksuver }}
+    permissions:
+      actions: write
+      contents: read
     steps:
       - name: 安装环境依赖+初始化源码仓库及llvm-Clang18工具链
         run: |
@@ -144,10 +153,22 @@ jobs:
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-neov4-6.6.89-${{ runner.os }}-main
+          key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-main
           restore-keys: |
-            ccache-neov4-6.6.89-${{ runner.os }}-
-            ccache-neov4-6.6.89-
+            ${{ env.CCACHE_KEY }}-${{ runner.os }}-
+            ${{ env.CCACHE_KEY }}-
+
+      - name: 清除旧 ccache 缓存
+        if: inputs.ccache_update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "正在清除仓库中的旧 ccache 缓存..."
+          if gh cache delete ${{ env.CCACHE_KEY }}-${{ runner.os }}-main -R ${{ github.repository }}; then
+            echo "成功删除旧的 ccache 缓存！"
+          else
+            echo "旧缓存不存在或已被清理！"
+          fi
       
       - name: 初始化并配置ccache
         run: |
@@ -578,6 +599,13 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
+
+      - name: 保存新的 ccache 缓存
+        if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-main
          
       - name: 应用KPM并修补内核
         run: |

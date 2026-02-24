@@ -104,6 +104,8 @@ jobs:
           rm -rf kernel_workspace
           mkdir kernel_workspace
           cd kernel_workspace
+          echo "当前仓库：$GITHUB_REPOSITORY"
+          echo "当前分支：$GITHUB_REF_NAME"
           
           sudo apt-mark hold firefox &&
           sudo apt-mark hold libc-bin &&
@@ -282,7 +284,7 @@ jobs:
             sed -i "s/KSU_VERSION_TAG_FALLBACK := v0.0.1/KSU_VERSION_TAG_FALLBACK := $KSU_GIT_TAG/g" kernel/Kbuild
             #为KernelSU Next添加WildKSU管理器支持
             cd ../common/drivers/kernelsu
-            wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/apk_sign.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/apk_sign.patch
             patch -p2 -N -F 3 < apk_sign.patch || true
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             echo "正在配置原版 KernelSU (tiann/KernelSU)..."
@@ -303,7 +305,7 @@ jobs:
           if [[ ${{ github.event.inputs.ksu_type }} != "none" ]]; then
             echo "正在添加susfs补丁..."
             git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-            wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
@@ -326,7 +328,7 @@ jobs:
         run: |
           echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
           cd kernel_workspace
-          git clone --depth=1 https://github.com/cctv18/oppo_oplus_realme_sm8750.git
+          git clone --depth=1 https://github.com/$GITHUB_REPOSITORY.git -b $GITHUB_REF_NAME
           cp ./oppo_oplus_realme_sm8750/zram_patch/001-lz4.patch ./common/
           cp ./oppo_oplus_realme_sm8750/zram_patch/lz4armv8.S ./common/lib
           cp ./oppo_oplus_realme_sm8750/zram_patch/002-zstd.patch ./common/
@@ -429,7 +431,7 @@ jobs:
           echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
           #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
           cd common
-          wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/config.patch
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
 
       - name: 添加 BBR 等一系列拥塞控制算法
@@ -541,8 +543,8 @@ jobs:
           echo "sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
-          wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/lib/libfakestat.so
-          wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/lib/libfaketimeMT.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfakestat.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfaketimeMT.so
           chmod 777 ./*.so
           export FAKESTAT="2025-05-25 12:00:00"
           export FAKETIME="@2025-05-25 13:00:00"
@@ -642,7 +644,7 @@ jobs:
             KSU_TYPENAME="none"
           fi
           if [[ "${{ github.event.inputs.lz4kd_enable }}" == "true" ]]; then
-            wget https://raw.githubusercontent.com/cctv18/oppo_oplus_realme_sm8750/refs/heads/main/zram.zip
+            wget https://raw.githubusercontent.com/$GITHUB_REPOSITORY/refs/heads/$GITHUB_REF_NAME/zram.zip
           fi
           if [[ ${{ github.event.inputs.kpm_enable }} == 'kpn' ]]; then
             wget https://github.com/cctv18/KPatch-Next/releases/latest/download/kpn.zip

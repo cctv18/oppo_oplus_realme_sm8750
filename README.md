@@ -1,8 +1,11 @@
 # 欧加真 SM8750/MT6991 系列通用6.6风驰移植内核自动化编译脚本
-[![STAR](https://img.shields.io/github/stars/cctv18/oppo_oplus_realme_sm8750?style=flat&logo=github)](https://github.com/cctv18/oppo_oplus_realme_sm8750/stargazers)
+[![STAR](https://img.shields.io/github/stars/cctv18/oppo_oplus_realme_sm8750?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU%2BR2l0SHViPC90aXRsZT48cGF0aCBkPSJNMTIgLjI5N2MtNi42MyAwLTEyIDUuMzczLTEyIDEyIDAgNS4zMDMgMy40MzggOS44IDguMjA1IDExLjM4NS42LjExMy44Mi0uMjU4LjgyLS41NzcgMC0uMjg1LS4wMS0xLjA0LS4wMTUtMi4wNC0zLjMzOC43MjQtNC4wNDItMS42MS00LjA0Mi0xLjYxQzQuNDIyIDE4LjA3IDMuNjMzIDE3LjcgMy42MzMgMTcuN2MtMS4wODctLjc0NC4wODQtLjcyOS4wODQtLjcyOSAxLjIwNS4wODQgMS44MzggMS4yMzYgMS44MzggMS4yMzYgMS4wNyAxLjgzNSAyLjgwOSAxLjMwNSAzLjQ5NS45OTguMTA4LS43NzYuNDE3LTEuMzA1Ljc2LTEuNjA1LTIuNjY1LS4zLTUuNDY2LTEuMzMyLTUuNDY2LTUuOTMgMC0xLjMxLjQ2NS0yLjM4IDEuMjM1LTMuMjItLjEzNS0uMzAzLS41NC0xLjUyMy4xMDUtMy4xNzYgMCAwIDEuMDA1LS4zMjIgMy4zIDEuMjMuOTYtLjI2NyAxLjk4LS4zOTkgMy0uNDA1IDEuMDIuMDA2IDIuMDQuMTM4IDMgLjQwNSAyLjI4LTEuNTUyIDMuMjg1LTEuMjMgMy4yODUtMS4yMy42NDUgMS42NTMuMjQgMi44NzMuMTIgMy4xNzYuNzY1Ljg0IDEuMjMgMS45MSAxLjIzIDMuMjIgMCA0LjYxLTIuODA1IDUuNjI1LTUuNDc1IDUuOTIuNDIuMzYuODEgMS4wOTYuODEgMi4yMiAwIDEuNjA2LS4wMTUgMi44OTYtLjAxNSAzLjI4NiAwIC4zMTUuMjEuNjkuODI1LjU3QzIwLjU2NSAyMi4wOTIgMjQgMTcuNTkyIDI0IDEyLjI5N2MwLTYuNjI3LTUuMzczLTEyLTEyLTEyIiBmaWxsPSIjZmZmZmZmIj48L3BhdGg%2BPC9zdmc%2B)](https://github.com/cctv18/oppo_oplus_realme_sm8750/stargazers)
 [![FORK](https://img.shields.io/github/forks/cctv18/oppo_oplus_realme_sm8750?style=flat&logo=greasyfork&color=%2394E61A)](https://github.com/cctv18/oppo_oplus_realme_sm8750/forks)
 [![COOLAPK](https://img.shields.io/badge/cctv18_2-cctv18_2?style=flat&logo=android&logoColor=FF4500&label=%E9%85%B7%E5%AE%89&color=FF4500)](http://www.coolapk.com/u/22650293)
 [![DISCUSSION](https://img.shields.io/badge/%E8%AE%A8%E8%AE%BA%E5%8C%BA-discussions?logo=livechat&logoColor=FFBBFF&color=3399ff)](https://github.com/cctv18/oppo_oplus_realme_sm8750/discussions)
+
+<img alt="Endpoint Badge" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcctv18%2Fkernel-workshop%2Frefs%2Fheads%2Fhotfix%2Fnotice.json">
+
 ##### 
 一个更方便、快捷的自动化OPPO/一加/真我系列骁龙8Elite(SM8750)/天玑9400+(MT6991)机型的通用内核编译脚本。
 ##### 
@@ -20,7 +23,7 @@
 - [x] 欧加真 SM8750 通用OKI内核（基于一加13源码的 6.6.30, 一加13t源码的 6.6.56, 一加Pad2Pro源码的 6.6.57, 一加13源码的 6.6.66 及一加13源码的 6.6.89，其他同内核版本非SM8750机型可自行测试，部分机型可完全兼容）
 - [x] 欧加真 MT6991 通用OKI内核（基于一加Ace5至尊版源码的 6.6.50 官方内核源码，其他同内核版本非MT6989机型可自行测试，部分机型可完全兼容）
 - [x] 欧加真 6.6 系列内核全面移植官方风驰scx调速器，在有官方风驰内核支持的机型上可实现完整原版风驰内核调度功能
-- [x] SukiSU Ultra/KernelSU Next/MKSU/原版KernelSU多版本KSU可选
+- [x] ReSukiSU/SukiSU Ultra/KernelSU Next/原版KernelSU多版本KSU可选
 - [x] 引入ccache缓存及大量独家编译流程优化，二次编译时间可稳定在约6min (注：首次使用ccache由于需要创建缓存速度会比较慢，约22min，从第二次开始ccache才会生效加速编译，加速后单次编译时间约6min(更改内核编译选项会导致include/generated/autoconf.h改变，且绝大部分源码编译时会间接引用这个头文件，故会导致二次编译速度有所下降，下降至约10分钟，若再次使用首次缓存时的配置可恢复至约6分钟，如需要长期修改配置选项建议清空ccache缓存再用新的配置重建缓存)；由于现在GitHub Action的机制，距离上一次创建缓存较长时间后缓存可能会被自动清除，此时编译会自动重建缓存)
 - [x] 引入O2编译优化，改善内核运行性能
 - [x] ~~可选manual/kprobes/syscall钩子模式(kprobes钩子模式下支持切换至sus su模式)~~ 由于最新版KSU已更新inline hook，故旧版manual/syscall钩子已作废
@@ -42,13 +45,19 @@
 ##### 
 ##### 
 ## 鸣谢
+- ReSukiSU：[ReSukiSU/ReSukiSU](https://github.com/ReSukiSU/ReSukiSU)
 - SukiSU Ultra：[SukiSU-Ultra/SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)
 - susfs4ksu：[ShirkNeko/susfs4ksu](https://github.com/ShirkNeko/susfs4ksu)
 - SukiSU内核补丁：[SukiSU-Ultra/SukiSU_patch](https://github.com/SukiSU-Ultra/SukiSU_patch)
 - pershoot维护的KernelSU Next分支：[pershoot/KernelSU-Next](https://github.com/pershoot/KernelSU-Next)
 - 手动钩子等补丁：[WildKernels/kernel_patches](https://github.com/WildKernels/kernel_patches)
-- MKSU: [5ec1cff/KernelSU](https://github.com/5ec1cff/KernelSU)
 - 原版KernelSU: [tiann/KernelSU](https://github.com/tiann/KernelSU)
 - 内核防格基带保护模块：[vc-teahouse/Baseband-guard](https://github.com/vc-teahouse/Baseband-guard)
 - GKI 内核构建脚本：(待定)
 - ~~本地化内核构建脚本（已失效）：[Suxiaoqinx/kernel_manifest_OnePlus_Sukisu_Ultra](https://github.com/Suxiaoqinx/kernel_manifest_OnePlus_Sukisu_Ultra)~~
+
+<!-- 这是一个访客统计，用来看看我的项目主页有多少人访问过 -->
+<div align="center">
+  <img width="0" height="0" src="https://count.getloli.com/get/@:cctv18" />
+</div>
+

@@ -15,8 +15,8 @@ read -p "是否启用susfs？(y/n，默认：y): " APPLY_SUSFS
 APPLY_SUSFS=${APPLY_SUSFS:-y}
 read -p "是否启用 KPM？(b-(re)sukisu内置kpm, k-kernelpatch next独立kpm实现, n-关闭kpm，默认：n): " USE_PATCH_LINUX
 USE_PATCH_LINUX=${USE_PATCH_LINUX:-n}
-read -p "KSU分支版本(y=SukiSU Ultra, r=ReSukiSU, n=KernelSU Next, m=MKSU, k=KSU, l=lkm模式(无内置KSU), 默认：y): " KSU_BRANCH
-KSU_BRANCH=${KSU_BRANCH:-y}
+read -p "KSU分支版本(r=ReSukiSU, y=SukiSU Ultra, n=KernelSU Next, k=KSU, l=lkm模式(无内置KSU), 默认：r): " KSU_BRANCH
+KSU_BRANCH=${KSU_BRANCH:-r}
 read -p "是否应用 lz4 1.10.0 & zstd 1.5.7 补丁？(y/n，默认：y): " APPLY_LZ4
 APPLY_LZ4=${APPLY_LZ4:-y}
 read -p "是否应用 lz4kd 补丁？(y/n，默认：n): " APPLY_LZ4KD
@@ -38,8 +38,6 @@ elif [[ "$KSU_BRANCH" == "r" || "$KSU_BRANCH" == "R" ]]; then
   KSU_TYPE="ReSukiSU"
 elif [[ "$KSU_BRANCH" == "n" || "$KSU_BRANCH" == "N" ]]; then
   KSU_TYPE="KernelSU Next"
-elif [[ "$KSU_BRANCH" == "m" || "$KSU_BRANCH" == "M" ]]; then
-  KSU_TYPE="MKSU"
 elif [[ "$KSU_BRANCH" == "k" || "$KSU_BRANCH" == "K" ]]; then
   KSU_TYPE="KernelSU"
 else
@@ -169,49 +167,7 @@ if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
 elif [[ "$KSU_BRANCH" == "r" || "$KSU_BRANCH" == "R" ]]; then
   echo ">>> 拉取 ReSukiSU 并设置版本..."
   curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
-  cd KernelSU
-  GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
-  echo "当前提交哈希: $GIT_COMMIT_HASH"
-  echo ">>> 正在获取上游 API 版本信息..."
-  for i in {1..3}; do
-      KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/Kbuild" | \
-          grep -m1 "KSU_VERSION_API :=" | \
-          awk -F'= ' '{print $2}' | \
-          tr -d '[:space:]')
-      if [ -n "$KSU_API_VERSION" ]; then
-          echo "成功获取 API 版本: $KSU_API_VERSION"
-          break
-      else
-          echo "获取失败，重试中 ($i/3)..."
-          sleep 1
-      fi
-  done
-  if [ -z "$KSU_API_VERSION" ]; then
-      echo -e "无法获取 API 版本，使用默认值 3.1.7..."
-      KSU_API_VERSION="3.1.7"
-  fi
-  export KSU_API_VERSION=$KSU_API_VERSION
-
-  VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@cctv18\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'@cctv18'
-
-  echo ">>> 正在修改 kernel/Kbuild 文件..."
-  sed -i '/define get_ksu_version_full/,/endef/d' kernel/Kbuild
-  sed -i '/KSU_VERSION_API :=/d' kernel/Kbuild
-  sed -i '/KSU_VERSION_FULL :=/d' kernel/Kbuild
-  awk -v def="$VERSION_DEFINITIONS" '
-      /REPO_OWNER :=/ {print; print def; inserted=1; next}
-      1
-      END {if (!inserted) print def}
-  ' kernel/Kbuild > kernel/Kbuild.tmp && mv kernel/Kbuild.tmp kernel/Kbuild
-
-  KSU_VERSION_CODE=$(expr $(git rev-list --count main 2>/dev/null) + 30700 2>/dev/null || echo 114514)
-  echo ">>> 修改完成！验证结果："
-  echo "------------------------------------------------"
-  grep -A10 "REPO_OWNER" kernel/Kbuild | head -n 10
-  echo "------------------------------------------------"
-  grep "KSU_VERSION_FULL" kernel/Kbuild
-  echo ">>> 最终版本字符串: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@cctv18"
-  echo ">>> Version Code: ${KSU_VERSION_CODE}"
+  echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@cctv18"' >> ./common/arch/arm64/configs/gki_defconfig
 elif [[ "$KSU_BRANCH" == "n" || "$KSU_BRANCH" == "N" ]]; then
   echo ">>> 拉取 KernelSU Next 并设置版本..."
   curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
@@ -225,12 +181,6 @@ elif [[ "$KSU_BRANCH" == "n" || "$KSU_BRANCH" == "N" ]]; then
   cd ../common/drivers/kernelsu
   wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/apk_sign.patch
   patch -p2 -N -F 3 < apk_sign.patch || true
-elif [[ "$KSU_BRANCH" == "m" || "$KSU_BRANCH" == "M" ]]; then
-  echo "正在配置 MKSU (5ec1cff/KernelSU)..."
-  curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
-  cd ./KernelSU
-  KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/5ec1cff/KernelSU/commits?sha=main&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 30000)
-  sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
 elif [[ "$KSU_BRANCH" == "k" || "$KSU_BRANCH" == "K" ]]; then
   echo "正在配置原版 KernelSU (tiann/KernelSU)..."
   curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/refs/heads/main/kernel/setup.sh" | bash -s main
@@ -242,101 +192,28 @@ else
 fi
 
 # ===== 克隆补丁仓库&应用 SUSFS 补丁 =====
-echo ">>> 克隆补丁仓库..."
 cd "$WORKDIR/kernel_workspace"
 echo ">>> 应用 SUSFS&hook 补丁..."
-if [[ "$KSU_BRANCH" == [yYrR] && "$APPLY_SUSFS" == [yY] ]]; then
-  git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
+if [[ "$APPLY_SUSFS" == [yY] ]]; then
+  echo ">>> 克隆补丁仓库..."
+  git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-android15-6.6
   wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
   cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
   cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
   cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
   cd ./common
   patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-  #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
-  sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
   patch -p1 -F 3 < 69_hide_stuff.patch || true
-elif [[ "$KSU_BRANCH" == [nN] && "$APPLY_SUSFS" == [yY] ]]; then
-  git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
-  cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
-  cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-  cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-  cd ./common
-  patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-  #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
-  sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
-  patch -p1 -N -F 3 < 69_hide_stuff.patch || true
-elif [[ "$KSU_BRANCH" == [mM] && "$APPLY_SUSFS" == [yY] ]]; then
-  git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
-  cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
-  # 临时修复：修复susfs补丁日志输出（由于上游KSU把部分Makefile代码移至Kbuild中，而susfs补丁未同步修改，故需修复susfs补丁修补位点）
-  PATCH_FILE="./KernelSU/10_enable_susfs_for_ksu.patch"
-  if [ -f "$PATCH_FILE" ]; then
-    if grep -q "a/kernel/Makefile" "$PATCH_FILE"; then
-      echo "检测到旧版 Makefile 补丁代码，正在执行修复..."
-      sed -i 's|kernel/Makefile|kernel/Kbuild|g' "$PATCH_FILE"
-      sed -i 's|^@@ .* format:.*|@@ -94,4 +94,13 @@|' "$PATCH_FILE"
-      sed -i 's|.*check-format:.*| ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes|' "$PATCH_FILE"
-      sed -i 's|.*clang-format --dry-run.*| ccflags-y += -Wno-declaration-after-statement -Wno-unused-function -Wno-unused-variable|' "$PATCH_FILE"
-      echo "补丁修复完成！"
-    else
-      echo "补丁代码已修复至 Kbuild 或不匹配，跳过修改..."
-    fi
-  else
-    echo "未找到KSU补丁！"
-    exit 1
-  fi
-  cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
-  cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-  cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-  cd ./KernelSU
-  patch -p1 < 10_enable_susfs_for_ksu.patch || true
-  #为MKSU修正susfs 2.0.0补丁
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8750/raw/refs/heads/main/other_patch/mksu_supercalls.patch
-  patch -p1 < mksu_supercalls.patch || true
-  cd ../common
-  patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-  #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
-  sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
-  patch -p1 -N -F 3 < 69_hide_stuff.patch || true
-elif [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
-  git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android15-6.6
-  wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
-  cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
-  # 临时修复：修复susfs补丁日志输出（由于上游KSU把部分Makefile代码移至Kbuild中，而susfs补丁未同步修改，故需修复susfs补丁修补位点）
-  PATCH_FILE="./KernelSU/10_enable_susfs_for_ksu.patch"
-  if [ -f "$PATCH_FILE" ]; then
-    if grep -q "a/kernel/Makefile" "$PATCH_FILE"; then
-      echo "检测到旧版 Makefile 补丁代码，正在执行修复..."
-      sed -i 's|kernel/Makefile|kernel/Kbuild|g' "$PATCH_FILE"
-      sed -i 's|^@@ .* format:.*|@@ -94,4 +94,13 @@|' "$PATCH_FILE"
-      sed -i 's|.*check-format:.*| ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes|' "$PATCH_FILE"
-      sed -i 's|.*clang-format --dry-run.*| ccflags-y += -Wno-declaration-after-statement -Wno-unused-function -Wno-unused-variable|' "$PATCH_FILE"
-      echo "补丁修复完成！"
-    else
-      echo "补丁代码已修复至 Kbuild 或不匹配，跳过修改..."
-    fi
-  else
-    echo "未找到KSU补丁！"
-    exit 1
-  fi
-  cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
-  cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-  cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-  cd ./KernelSU
-  patch -p1 < 10_enable_susfs_for_ksu.patch || true
-  cd ../common
-  patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
-  #临时修复 undeclared identifier 'vma' 编译错误：把vma = find_vma(...)替换为struct vm_area_struct *vma = find_vma(...)，解决部分版本源码中vma定义缺失的问题
-  sed -i 's|vma = find_vma(mm|struct vm_area_struct *&|' ./fs/proc/task_mmu.c
-  patch -p1 -N -F 3 < 69_hide_stuff.patch || true
 else
   echo ">>> 未开启susfs，跳过susfs补丁配置..."
-  cd common
 fi
-cd ../
+cd "$WORKDIR/kernel_workspace"
+if [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
+  cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+  cd ./KernelSU
+  patch -p1 < 10_enable_susfs_for_ksu.patch || true
+fi
+cd "$WORKDIR/kernel_workspace"
 
 # ===== 应用 LZ4 & ZSTD 补丁 =====
 if [[ "$APPLY_LZ4" == "y" || "$APPLY_LZ4" == "Y" ]]; then

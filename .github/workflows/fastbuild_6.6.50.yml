@@ -624,6 +624,16 @@ jobs:
             rm -f Image
             mv oImage Image
           fi
+          if [[ ${{ github.event.inputs.kpm_enable }} == 'kpn' ]]; then
+            echo "正在应用KP-N并修补内核..."
+            cd kernel_workspace/common/out/arch/arm64/boot
+            wget https://github.com/KernelSU-Next/KPatch-Next/releases/latest/download/kptools-linux
+            wget https://github.com/KernelSU-Next/KPatch-Next/releases/latest/download/kpimg-linux
+            chmod +x ./kptools-linux
+            ./kptools-linux -p -i ./Image -k ./kpimg-linux -o ./oImage
+            rm -f Image
+            mv oImage Image
+          fi
           
       - name: 克隆 AnyKernel3 并打包
         id: create_zip
@@ -755,7 +765,7 @@ jobs:
             3. 若你之前已刷入SukiSU Ultra内核，且SukiSU Ultra管理器已更新至最新版本，可在SukiSU Ultra管理器中直接刷入AnyKernel刷机包并重启；
             4. 刷入无lz4kd补丁版的内核前若刷入过lz4kd补丁版的内核，为避免出错，请先关闭zram模块；
             5. 由于KernelSU上游更新了元模块功能，最新版KSU管理器（包括除KernelSU Next以外的各分支）需要配合元模块(metamodule)才能正常挂载模块。目前的元模块包括[meta overlayfs](https://github.com/KernelSU-Modules-Repo/meta-overlayfs), [mountify](https://github.com/backslashxx/mountify), [meta magicmount](https://github.com/7a72/meta-magic_mount/), [meta magicmount rs](https://github.com/Tools-cx-app/meta-magic_mount/), [hybrid mount](https://github.com/YuzakiKokuban/meta-hybrid_mount)等。若你是第一次使用KSU或刚从旧版KSU管理器升级至新版，请先安装一个元模块，这样其他涉及系统挂载的模块才能正常运行；
-            6. KernelPatch Next（即KPN）是一个独立于KSU的KPM实现，可以运行在任意KSU/面具环境中（不适用于Apatch），且不能与(Re)SukiSU内置的kpm功能共同使用，使用前请保证你的内核没有内置的kpm实现/修补。由于KPN的实现需要设置superkey，出于安全考虑，工作流脚本没有用统一的superkey自动修补内核，刷入后首次运行该模块时请对内核进行手动修补。
+            6. KernelPatch Next（即KPN）是一个独立于KSU的KPM实现，可以运行在任意KSU/面具环境中（不适用于Apatch），且不能与(Re)SukiSU内置的kpm功能共同使用，使用前请保证你的内核没有内置的kpm实现/修补。
             #### ※※※刷写内核有风险，为防止出现意外导致手机变砖，在刷入内核前请务必用[KernelFlasher](https://github.com/capntrips/KernelFlasher)等软件备份boot等关键启动分区!※※※
           draft: false
           prerelease: false

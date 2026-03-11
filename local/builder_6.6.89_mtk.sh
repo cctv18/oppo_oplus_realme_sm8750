@@ -396,9 +396,19 @@ if [[ "$USE_PATCH_LINUX" == [bB] && $KSU_BRANCH == [yYrR] ]]; then
   ./patch_linux
   rm -f Image
   mv oImage Image
-  echo ">>> 已成功打上KPM补丁"
+  echo ">>> 已成功打上KPM补丁!"
+elif [[ "$USE_PATCH_LINUX" == [kK] ]]; then
+  echo ">>> 使用 kptools-linux 工具处理输出..."
+  cd "$OUT_DIR"
+  wget https://github.com/KernelSU-Next/KPatch-Next/releases/latest/download/kptools-linux
+  wget https://github.com/KernelSU-Next/KPatch-Next/releases/latest/download/kpimg-linux
+  chmod +x ./kptools-linux
+  ./kptools-linux -p -i ./Image -k ./kpimg-linux -o ./oImage
+  rm -f Image
+  mv oImage Image
+  echo ">>> 已成功打上KP-N补丁!"
 else
-  echo ">>> 跳过 patch_linux 操作"
+  echo ">>> 跳过 KPM 修补操作..."
 fi
 
 # ===== 克隆并打包 AnyKernel3 =====

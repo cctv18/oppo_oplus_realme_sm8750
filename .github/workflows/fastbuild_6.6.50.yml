@@ -153,7 +153,7 @@ jobs:
           echo "当前构建内核版本：${{ env.KERNEL_VERSION }}.${{ env.SUB_VERSION }}"
 
       - name: 载入当前版本内核的 ccache缓存
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -630,7 +630,7 @@ jobs:
 
       - name: 保存新的 ccache 缓存
         if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-${{ github.ref_name }}
@@ -783,7 +783,7 @@ jobs:
          
       - name: 创建发布
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2.5.0
         with:
           tag_name: "${{ env.TAG_HEAD }}-${{ env.TIME }}"
           name: "${{ env.TAG_HEAD }}-${{ env.FULL_VERSION }}"

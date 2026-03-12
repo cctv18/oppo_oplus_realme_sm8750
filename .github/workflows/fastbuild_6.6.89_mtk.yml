@@ -157,7 +157,7 @@ jobs:
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-main
+          key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-${{ github.ref_name }}
           restore-keys: |
             ${{ env.CCACHE_KEY }}-${{ runner.os }}-
             ${{ env.CCACHE_KEY }}-
@@ -168,7 +168,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "正在清除仓库中的旧 ccache 缓存..."
-          if gh cache delete ${{ env.CCACHE_KEY }}-${{ runner.os }}-main -R ${{ github.repository }}; then
+          if gh cache delete ${{ env.CCACHE_KEY }}-${{ runner.os }}-${{ github.ref_name }} -R ${{ github.repository }}; then
             echo "成功删除旧的 ccache 缓存！"
           else
             echo "旧缓存不存在或已被清理！"
@@ -611,7 +611,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-main
+          key: ${{ env.CCACHE_KEY }}-${{ runner.os }}-${{ github.ref_name }}
          
       - name: 应用KPM并修补内核
         run: |

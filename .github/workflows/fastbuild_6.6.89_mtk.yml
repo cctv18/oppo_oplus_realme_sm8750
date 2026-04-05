@@ -1,4 +1,4 @@
-name: (天玑特供)加速版构建 6.6.89 欧加真OKI内核
+name: (天玑特供) 6.6.89 欧加真OKI内核快速构建
 
 env:
   TZ: Asia/Shanghai
@@ -37,7 +37,7 @@ on:
           - 'builtin'
           - 'kpn'
       lz4_enable:
-        description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁及 LZ4KD 补丁'
+        description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁'
         required: true
         type: boolean
         default: 'true'

@@ -114,9 +114,15 @@ jobs:
           sudo apt purge man-db &&
           sudo rm -rf /var/lib/man-db/auto-update &&
           sudo apt update &&
-          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev ccache &
+          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev &
           #旧版完整指令：（由于经过验证大部分指令已内置于GitHub Action环境中，故进行精简）
           #sudo apt-get install -y --no-install-recommends curl bison flex make binutils git perl gcc python3 python-is-python3 bc libssl-dev libelf-dev zip unzip ccache
+          
+          #使用最新版ccache-ECS（特化优化内核编译缓存，大幅提升二次不同配置编译速度）
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/ccache-x86-64 -O ccache &&
+          sudo cp -f ./ccache /usr/bin/ccache &&
+          sudo chmod +x /usr/bin/ccache &&
+          rm -f ./ccache &
           
           echo "正在克隆源码仓库..."
           aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8750/archive/refs/heads/oneplus/sm8750_v_16.0.0_oneplus_13_6.6.89.zip -o common.zip && 
@@ -202,7 +208,7 @@ jobs:
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
+          export CCACHE_NOHARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
           
@@ -561,9 +567,10 @@ jobs:
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
+          export CCACHE_NOHARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
+          export CCACHE_IS_KERNEL_COMPILING="true"
           echo "sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common

@@ -1,0 +1,58 @@
+name: op13-build
+# 自编内核 + 自签 ReSukiSU 管理器(susfs2.2.0)云端构建。
+# 需在仓库 Settings > Secrets 配:
+#   KEYSTORE_B64  = base64 -w0 op13_rsa2048.keystore
+#   KS_STOREPASS  = keystore storepass
+#   KS_KEYPASS    = key keypass
+on:
+  workflow_dispatch:
+
+jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends aria2 flex bison libssl-dev bc cpio zip unzip perl python3 git wget curl rsync make
+      - name: build kernel (prebuilt clang18 + LLVM=1)
+        run: bash op13/build-kernel.sh
+      - name: collect
+        run: |
+          mkdir -p artifact
+          cp op13/kernel_workspace/Anykernel3-*.zip artifact/kernel-op13-susfs220.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-op13-susfs220
+          path: artifact/*.zip
+
+  manager:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: install SDK components
+        run: yes | sdkmanager "platforms;android-37" "build-tools;36.1.0" "ndk;29.0.14206865" "platform-tools"
+      - name: restore keystore
+        run: echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > op13/keys/op13_rsa2048.keystore
+      - name: build manager (susfs2.2.0 + selfsign + ksud)
+        env:
+          ROOT: ${{ github.workspace }}/op13
+          WORK: ${{ github.workspace }}/op13/workdir
+          OUT: ${{ github.workspace }}/op13/out
+          KEYSTORE: ${{ github.workspace }}/op13/keys/op13_rsa2048.keystore
+          KS_ALIAS: op13
+          KS_STOREPASS: ${{ secrets.KS_STOREPASS }}
+          KS_KEYPASS: ${{ secrets.KS_KEYPASS }}
+        run: |
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          bash op13/build-manager.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ReSukiSU-op13-susfs220
+          path: op13/out/*.apk

@@ -1,0 +1,15 @@
+keys/
+*.keystore
+*.apk
+*.zip
+*.img
+*.log
+*.exitcode
+kernel_workspace/
+toolchain/
+android-sdk/
+gradle-home/
+workdir/
+*.der
+out/
+_*/

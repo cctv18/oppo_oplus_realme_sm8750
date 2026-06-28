@@ -1,0 +1,147 @@
+diff --git a/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSManager.kt b/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSManager.kt
+index 832cae0..316718e 100644
+--- a/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSManager.kt
++++ b/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSManager.kt
+@@ -73,7 +73,7 @@ object SuSFSManager {
+     private const val MIN_VERSION_FOR_HIDE_MOUNT = "1.5.8"
+     private const val MIN_VERSION_FOR_LOOP_PATH = "1.5.9"
+     private const val MIN_VERSION_SUS_MAPS = "1.5.12"
+-    const val MAX_SUSFS_VERSION = "2.0.0"
++    const val MAX_SUSFS_VERSION = "2.2.0"
+     private const val BACKUP_FILE_EXTENSION = ".susfs_backup"
+     private const val MEDIA_DATA_PATH = "/data/media/0/Android/data"
+     private const val CGROUP_BASE_PATH = "/sys/fs/cgroup"
+@@ -953,7 +953,7 @@ object SuSFSManager {
+             return false
+         }
+ 
+-        val success = executeSusfsCommand(context, "hide_sus_mnts_for_all_procs ${if (hideForAll) 1 else 0}")
++        val success = executeSusfsCommand(context, "hide_sus_mnts_for_non_su_procs ${if (hideForAll) 1 else 0}")
+         if (success) {
+             saveHideSusMountsForAllProcs(context, hideForAll)
+             if (isAutoStartEnabled(context)) updateMagiskModule(context)
+@@ -982,29 +982,8 @@ object SuSFSManager {
+     // 添加SUS路径
+     @SuppressLint("StringFormatInvalid")
+     suspend fun addSusPath(context: Context, path: String): Boolean {
+-        // 如果是1.5.8版本，先设置路径配置
+-        if (isSusVersion158()) {
+-            // 获取当前配置的路径，如果没有配置则使用默认值
+-            val androidDataPath = getAndroidDataPath(context)
+-            val sdcardPath = getSdcardPath(context)
+-
+-            // 先设置Android Data路径
+-            val androidDataSuccess = executeSusfsCommand(context, "set_android_data_root_path '$androidDataPath'")
+-            if (androidDataSuccess) {
+-                showToast(context, context.getString(R.string.susfs_android_data_path_set, androidDataPath))
+-            }
+-
+-            // 再设置SD卡路径
+-            val sdcardSuccess = executeSusfsCommand(context, "set_sdcard_root_path '$sdcardPath'")
+-            if (sdcardSuccess) {
+-                showToast(context, context.getString(R.string.susfs_sdcard_path_set, sdcardPath))
+-            }
+-
+-            // 如果路径设置失败，记录但不阻止继续执行
+-            if (!androidDataSuccess || !sdcardSuccess) {
+-                showToast(context, context.getString(R.string.susfs_path_setup_warning))
+-            }
+-        }
++        // susfs 2.2.0 已移除 set_android_data_root_path / set_sdcard_root_path CLI，
++        // add_sus_path 内部自行处理路径，无需再预先设置根路径。
+ 
+         // 执行添加SUS路径命令
+         val result = executeSusfsCommandWithOutput(context, "add_sus_path '$path'")
+@@ -1311,31 +1290,28 @@ object SuSFSManager {
+     }
+ 
+     // 设置Android数据路径
++    // 注: susfs 2.2.0 已移除 set_android_data_root_path CLI，这里仅保存偏好值
++    // （addAppPaths 等 Kotlin 侧逻辑仍会用到该值来拼接 sus 路径）。
+     suspend fun setAndroidDataPath(context: Context, path: String): Boolean {
+-        val success = executeSusfsCommand(context, "set_android_data_root_path '$path'")
+-        if (success) {
+-            saveAndroidDataPath(context, path)
+-            if (isAutoStartEnabled(context)) {
+-                CoroutineScope(Dispatchers.Default).launch {
+-                    updateMagiskModule(context)
+-                }
++        saveAndroidDataPath(context, path)
++        if (isAutoStartEnabled(context)) {
++            CoroutineScope(Dispatchers.Default).launch {
++                updateMagiskModule(context)
+             }
+         }
+-        return success
++        return true
+     }
+ 
+     // 设置SD卡路径
++    // 注: susfs 2.2.0 已移除 set_sdcard_root_path CLI，这里仅保存偏好值。
+     suspend fun setSdcardPath(context: Context, path: String): Boolean {
+-        val success = executeSusfsCommand(context, "set_sdcard_root_path '$path'")
+-        if (success) {
+-            saveSdcardPath(context, path)
+-            if (isAutoStartEnabled(context)) {
+-                CoroutineScope(Dispatchers.Default).launch {
+-                    updateMagiskModule(context)
+-                }
++        saveSdcardPath(context, path)
++        if (isAutoStartEnabled(context)) {
++            CoroutineScope(Dispatchers.Default).launch {
++                updateMagiskModule(context)
+             }
+         }
+-        return success
++        return true
+     }
+ 
+     /**
+diff --git a/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSModuleScripts.kt b/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSModuleScripts.kt
+index f89f500..dad0e44 100644
+--- a/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSModuleScripts.kt
++++ b/manager/app/src/main/java/com/resukisu/resukisu/ui/susfs/util/SuSFSModuleScripts.kt
+@@ -443,7 +443,7 @@ object ScriptGenerator {
+                 // SUS挂载隐藏控制
+                 val hideValue = if (config.hideSusMountsForAllProcs) 1 else 0
+                 appendLine("# 设置SUS挂载隐藏控制")
+-                appendLine($$"\"$SUSFS_BIN\" hide_sus_mnts_for_all_procs $$hideValue")
++                appendLine($$"\"$SUSFS_BIN\" hide_sus_mnts_for_non_su_procs $$hideValue")
+                 appendLine($$"echo \"$(get_current_time): SUS挂载隐藏控制设置为: $${if (config.hideSusMountsForAllProcs) "对所有进程隐藏" else "仅对非KSU进程隐藏"}\" >> \"$LOG_FILE\"")
+                 appendLine()
+ 
+@@ -485,17 +485,12 @@ object ScriptGenerator {
+ 
+     @SuppressLint("SdCardPath")
+     private fun StringBuilder.generatePathSettingSection(androidDataPath: String, sdcardPath: String) {
+-        appendLine("# 路径配置")
+-        appendLine("# 设置Android Data路径")
++        // susfs 2.2.0 已移除 set_android_data_root_path / set_sdcard_root_path CLI。
++        // 仅保留等待 /sdcard 挂载就绪，确保随后 add_sus_path 命中真实路径。
++        appendLine("# 路径配置: 等待存储挂载就绪 (susfs 2.2.0 不再需要 set_*_root_path)")
+         appendLine("until [ -d \"/sdcard/Android\" ]; do sleep 1; done")
+         appendLine("sleep 60")
+-        appendLine()
+-        appendLine($$"\"$SUSFS_BIN\" set_android_data_root_path '$$androidDataPath'")
+-        appendLine($$"echo \"$(get_current_time): Android Data路径设置为: $$androidDataPath\" >> \"$LOG_FILE\"")
+-        appendLine()
+-        appendLine("# 设置SD卡路径")
+-        appendLine($$"\"$SUSFS_BIN\" set_sdcard_root_path '$$sdcardPath'")
+-        appendLine($$"echo \"$(get_current_time): SD卡路径设置为: $$sdcardPath\" >> \"$LOG_FILE\"")
++        appendLine($$"echo \"$(get_current_time): 存储已就绪, android_data='$$androidDataPath' sdcard='$$sdcardPath'\" >> \"$LOG_FILE\"")
+         appendLine()
+     }
+ 
+diff --git a/manager/app/src/main/java/com/resukisu/resukisu/ui/util/KsuCli.kt b/manager/app/src/main/java/com/resukisu/resukisu/ui/util/KsuCli.kt
+index 6da043b..1c9cac8 100644
+--- a/manager/app/src/main/java/com/resukisu/resukisu/ui/util/KsuCli.kt
++++ b/manager/app/src/main/java/com/resukisu/resukisu/ui/util/KsuCli.kt
+@@ -110,7 +110,7 @@ suspend fun isOfficialSignature(): Boolean = withContext(Dispatchers.IO) {
+         .add("${getKsuDaemonPath()} debug get-sign ${ksuApp.packageResourcePath}")
+         .to(ArrayList<String>(), null).exec().out
+     out.firstOrNull()?.trim()
+-        .orEmpty() == "size: 0x377, hash: d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64"
++        .orEmpty() == "size: 0x311, hash: 3374a2760b60fb189a0ef24f8ca3a9b2af60819654ce6e633a42b03dd73cbfdb"
+ }
+ 
+ suspend fun getFeatureStatus(feature: String): String = withContext(Dispatchers.IO) {

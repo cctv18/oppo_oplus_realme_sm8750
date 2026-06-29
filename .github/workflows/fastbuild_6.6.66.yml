@@ -1,3 +1,7 @@
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 name: 6.6.66 欧加真OKI内核快速构建
 
 env:

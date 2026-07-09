@@ -80,6 +80,11 @@ on:
         required: true
         type: boolean
         default: 'true'
+      cve_2026_43499_patch:
+        description: '是否应用 CVE-2026-43499 rtmutex 修复补丁'
+        required: true
+        type: boolean
+        default: 'true'
       ccache_update:
         description: '更新ccache缓存(将本次编译生成的ccache缓存覆盖至仓库缓存，在更改编译配置、源码或需要刷新缓存时开启)'
         required: true
@@ -243,6 +248,16 @@ jobs:
           if [ "${{ steps.ccache-restore.outputs.cache-hit }}" == 'true' ]; then
             echo "ccache缓存命中详情:"
             ccache -sv
+          fi
+
+      - name: 应用 CVE_2026_43499 修复补丁
+        id: cve_2026_43499_patch
+        run: |
+          if [[ "${{ github.event.inputs.cve_2026_43499_patch }}" == "true" ]]; then
+            echo ">>> 应用 CVE-2026-43499 rtmutex 修复补丁..."
+            cd kernel_workspace/common
+            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/security_patch/cve-2026-43499-rtmutex-6.6.patch
+            patch -p1 -F 3 < cve-2026-43499-rtmutex-6.6.patch
           fi
 
       - name: 添加KernelSU
@@ -720,6 +735,7 @@ jobs:
           echo "ADIOS: ${{ github.event.inputs.adios_enable }}" >> ./ak3.log
           echo "Re-Kernel: ${{ github.event.inputs.rekernel_enable }}" >> ./ak3.log
           echo "BBG: ${{ github.event.inputs.baseband_guard }}" >> ./ak3.log
+          echo "CVE-2026-43499: ${{ github.event.inputs.cve_2026_43499_patch }}" >> ./ak3.log
           zip -z ../$AK3_NAME < ./ak3.log
 
       - name: 上传 Ccache 调试日志
@@ -805,6 +821,7 @@ jobs:
           - ADIOS IO调度器支持：${{ github.event.inputs.adios_enable }}
           - Re-Kernel支持：${{ github.event.inputs.rekernel_enable }}
           - 内核级基带保护支持：${{ github.event.inputs.baseband_guard }}
+          - CVE-2026-43499 rtmutex 修复补丁：${{ github.event.inputs.cve_2026_43499_patch }}
           - ReSukiSU管理器下载：[ReSukiSU_CI](https://github.com/cctv18/ReSukiSU_CI/releases)
           - SukiSU Ultra管理器下载：[SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
           - KernelSU Next管理器下载：[KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next/releases)

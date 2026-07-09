@@ -33,6 +33,8 @@ read -p "是否启用Re-Kernel？(y/n，默认：n): " APPLY_REKERNEL
 APPLY_REKERNEL=${APPLY_REKERNEL:-n}
 read -p "是否启用内核级基带保护？(y/n，默认：y): " APPLY_BBG
 APPLY_BBG=${APPLY_BBG:-y}
+read -p "是否应用 CVE-2026-43499 rtmutex 修复补丁？(y/n，默认：y): " APPLY_CVE_2026_43499
+APPLY_CVE_2026_43499=${APPLY_CVE_2026_43499:-y}
 
 if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   KSU_TYPE="SukiSU Ultra"
@@ -61,6 +63,7 @@ echo "应用 Droidspaces 容器支持: $APPLY_DROIDSPACES"
 echo "启用ADIOS调度器: $APPLY_ADIOS"
 echo "启用Re-Kernel: $APPLY_REKERNEL"
 echo "启用内核级基带保护: $APPLY_BBG"
+echo "应用 CVE-2026-43499 修复补丁: $APPLY_CVE_2026_43499"
 echo "===================="
 echo
 
@@ -93,6 +96,14 @@ mkdir kernel_workspace
 cd kernel_workspace
 git clone --depth=1 https://github.com/cctv18/android_kernel_oneplus_mt6991 -b oneplus/mt6991_v_15.0.2_ace5_ultra common
 echo ">>> 初始化仓库完成"
+
+# ===== 应用 CVE-2026-43499 修复补丁 =====
+if [[ "$APPLY_CVE_2026_43499" == [yY] ]]; then
+  echo ">>> 应用 CVE-2026-43499 rtmutex 修复补丁..."
+  cd common
+  patch -p1 -F 3 < "$WORKDIR/../security_patch/cve-2026-43499-rtmutex-6.6.patch"
+  cd ..
+fi
 
 # ===== 清除 abi 文件、去除 -dirty 后缀 =====
 echo ">>> 正在清除 ABI 文件及去除 dirty 后缀..."

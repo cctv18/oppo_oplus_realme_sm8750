@@ -170,7 +170,7 @@ cd "$WORKDIR/kernel_workspace"
 # ===== 应用 NoMount 补丁 =====
 if [[ "$APPLY_NOMOUNT" == [yY] ]]; then
   echo ">>> 正在应用 NoMount 补丁..."
-  git clone --depth=1 https://github.com/Dusk-0531/nomount.git nomount
+  git clone --depth=1 -b dev https://github.com/Dusk-0531/nomount.git nomount
   cp ./nomount/kernel/src/nomount.c ./common/fs/
   cp ./nomount/kernel/src/nomount.h ./common/fs/
   cd ./common

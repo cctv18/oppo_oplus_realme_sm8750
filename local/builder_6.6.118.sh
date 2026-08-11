@@ -33,6 +33,8 @@ read -p "是否启用Re-Kernel？(y/n，默认：n): " APPLY_REKERNEL
 APPLY_REKERNEL=${APPLY_REKERNEL:-n}
 read -p "是否启用内核级基带保护？(y/n，默认：y): " APPLY_BBG
 APPLY_BBG=${APPLY_BBG:-y}
+read -p "是否启用 NoMount？(y/n，默认：n): " APPLY_NOMOUNT
+APPLY_NOMOUNT=${APPLY_NOMOUNT:-n}
 
 if [[ "$KSU_BRANCH" == "y" || "$KSU_BRANCH" == "Y" ]]; then
   KSU_TYPE="SukiSU Ultra"
@@ -61,6 +63,7 @@ echo "应用 Droidspaces 容器支持: $APPLY_DROIDSPACES"
 echo "启用ADIOS调度器: $APPLY_ADIOS"
 echo "启用Re-Kernel: $APPLY_REKERNEL"
 echo "启用内核级基带保护: $APPLY_BBG"
+echo "启用 NoMount: $APPLY_NOMOUNT"
 echo "===================="
 echo
 
@@ -164,6 +167,19 @@ if [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
 fi
 cd "$WORKDIR/kernel_workspace"
 
+# ===== 应用 NoMount 补丁 =====
+if [[ "$APPLY_NOMOUNT" == [yY] ]]; then
+  echo ">>> 正在应用 NoMount 补丁..."
+  git clone --depth=1 https://github.com/Dusk-0531/nomount.git nomount
+  cp ./nomount/kernel/src/nomount.c ./common/fs/
+  cp ./nomount/kernel/src/nomount.h ./common/fs/
+  cd ./common
+  patch -p1 -N -F 3 < ../nomount/kernel/patches/nomount_6.6_kernel_integration.patch || true
+  cd "$WORKDIR/kernel_workspace"
+else
+  echo ">>> 跳过 NoMount 补丁..."
+fi
+
 # ===== 应用 LZ4 & ZSTD 补丁 =====
 if [[ "$APPLY_LZ4" == "y" || "$APPLY_LZ4" == "Y" ]]; then
   echo ">>> 正在添加lz4 1.10.0 & zstd 1.5.7补丁..."
@@ -204,6 +220,11 @@ DEFCONFIG_FILE=./common/arch/arm64/configs/gki_defconfig
 
 # 写入通用 SUSFS/KSU 配置
 echo "CONFIG_KSU=y" >> "$DEFCONFIG_FILE"
+if [[ "$APPLY_NOMOUNT" == [yY] ]]; then
+  echo "CONFIG_NOMOUNT=y" >> "$DEFCONFIG_FILE"
+else
+  echo "CONFIG_NOMOUNT=n" >> "$DEFCONFIG_FILE"
+fi
 if [[ "$APPLY_SUSFS" == [yY] ]]; then
   echo "CONFIG_KSU_SUSFS=y" >> "$DEFCONFIG_FILE"
   echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$DEFCONFIG_FILE"
@@ -444,6 +465,9 @@ if [[ "$APPLY_REKERNEL" == "y" || "$APPLY_REKERNEL" == "Y" ]]; then
 fi
 if [[ "$APPLY_BBG" == "y" || "$APPLY_BBG" == "Y" ]]; then
   ZIP_NAME="${ZIP_NAME}-bbg"
+fi
+if [[ "$APPLY_NOMOUNT" == "y" || "$APPLY_NOMOUNT" == "Y" ]]; then
+  ZIP_NAME="${ZIP_NAME}-nomount"
 fi
 
 ZIP_NAME="${ZIP_NAME}-v$(date +%Y%m%d).zip"

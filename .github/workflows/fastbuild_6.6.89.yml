@@ -301,6 +301,16 @@ jobs:
             cd ./common
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
+            # ReSukiSU renamed the sulog fd installer, while the SUSFS patch
+            # still references the old ksu_install_su_fd symbol. Keep the
+            # integration aligned with the current ReSukiSU implementation.
+            if grep -q 'ksu_install_su_fd' ./fs/exec.c; then
+              sed -i 's/ksu_install_su_fd/ksu_install_sulog_fd/g' ./fs/exec.c
+            fi
+            grep -q 'ksu_install_sulog_fd' ./fs/exec.c || {
+              echo 'SUSFS/ReSukiSU sulog fd integration check failed'
+              exit 1
+            }
             cd ..
           else
             echo "已选择无内置KernelSU模式，跳过susfs配置..."

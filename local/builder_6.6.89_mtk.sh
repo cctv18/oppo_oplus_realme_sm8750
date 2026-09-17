@@ -151,7 +151,7 @@ if [[ "$APPLY_SUSFS" == [yY] ]]; then
   cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
   cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
   cd ./common
-  patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
+  patch -p1 -F 3 < 50_add_susfs_in_gki-android15-6.6.patch || true
   patch -p1 -F 3 < 69_hide_stuff.patch || true
 else
   echo ">>> 未开启susfs，跳过susfs补丁配置..."
@@ -160,7 +160,7 @@ cd "$WORKDIR/kernel_workspace"
 if [[ "$KSU_BRANCH" == [kK] && "$APPLY_SUSFS" == [yY] ]]; then
   cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
   cd ./KernelSU
-  patch -p1 < 10_enable_susfs_for_ksu.patch || true
+  patch -p1 -F 3 < 10_enable_susfs_for_ksu.patch || true
 fi
 cd "$WORKDIR/kernel_workspace"
 
@@ -175,7 +175,7 @@ if [[ "$APPLY_LZ4" == "y" || "$APPLY_LZ4" == "Y" ]]; then
   cd "$WORKDIR/kernel_workspace/common"
   git apply -p1 < 001-lz4.patch || true
   git apply -p1 < 001-lz4-clearMake.patch || true
-  patch -p1 < 002-zstd.patch || true
+  patch -p1 -F 3 < 002-zstd.patch || true
   cd "$WORKDIR/kernel_workspace"
 else
   echo ">>> 跳过 LZ4&ZSTD 补丁..."

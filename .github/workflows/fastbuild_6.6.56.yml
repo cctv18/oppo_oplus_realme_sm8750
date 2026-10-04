@@ -12,12 +12,12 @@ on:
   workflow_dispatch:
     inputs:
       ksu_type:
-        description: 'KernelSU分支(ReSukiSU/SukiSU Ultra/KernelSU Next/KSU(原版)/无内置KSU,默认ReSukiSU)'
+        description: 'KernelSU分支(BakaSU/SukiSU Ultra/KernelSU Next/KSU(原版)/无内置KSU,默认BakaSU)'
         required: true
         type: choice
-        default: 'resukisu'
+        default: 'bakasu'
         options:
-          - 'resukisu'
+          - 'bakasu'
           - 'sukisu'
           - 'ksunext'
           - 'ksu'
@@ -250,9 +250,9 @@ jobs:
         run: |
           # 进入内核工作目录
           cd kernel_workspace
-          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" || ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
-            echo "正在配置ReSukiSU（由于SukiSU长期未维护无法正常编译，且ReSukiSU兼容sukisu管理器，故SukiSU源码仓库已重定向为resukisu）..."
-            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s main
+          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" || ${{ github.event.inputs.ksu_type }} == "bakasu" ]]; then
+            echo "正在配置BakaSU（由于SukiSU长期未维护无法正常编译，且BakaSU兼容sukisu管理器，故SukiSU源码仓库已重定向为bakasu）..."
+            curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/refs/heads/main/kernel/setup.sh" | bash -s main
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@cctv18"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
@@ -674,8 +674,8 @@ jobs:
           fi
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
-          elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
-            KSU_TYPENAME="ReSukiSU"
+          elif [[ ${{ github.event.inputs.ksu_type }} == "bakasu" ]]; then
+            KSU_TYPENAME="BakaSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             KSU_TYPENAME="KSUNext"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
@@ -774,8 +774,8 @@ jobs:
           echo "TAG_HEAD=$TAG_HEAD" >> $GITHUB_ENV
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU Ultra"
-          elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
-            KSU_TYPENAME="ReSukiSU"
+          elif [[ ${{ github.event.inputs.ksu_type }} == "bakasu" ]]; then
+            KSU_TYPENAME="BakaSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
             KSU_TYPENAME="KernelSU Next"
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
@@ -806,7 +806,7 @@ jobs:
           - ADIOS IO调度器支持：${{ github.event.inputs.adios_enable }}
           - Re-Kernel支持：${{ github.event.inputs.rekernel_enable }}
           - 内核级基带保护支持：${{ github.event.inputs.baseband_guard }}
-          - ReSukiSU管理器下载：[ReSukiSU_CI](https://github.com/cctv18/ReSukiSU_CI/releases)
+          - BakaSU管理器下载：[BakaSU_CI](https://github.com/cctv18/BakaSU_CI/releases)
           - SukiSU Ultra管理器下载：[SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases)
           - KernelSU Next管理器下载：[KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next/releases)
           - KSU原版管理器下载：[KernelSU](https://github.com/tiann/KernelSU/releases)

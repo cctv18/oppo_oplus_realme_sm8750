@@ -527,6 +527,22 @@ jobs:
           cd kernel_workspace
           echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
 
+      - name: 修复 libbpf 在新版 glibc/C23 下的 -Werror 报错
+        run: |
+          cd kernel_workspace/common
+          F=tools/lib/bpf/libbpf.c
+          M=tools/lib/bpf/Makefile
+          # 1) 上游 d70f79fe：next_path 应为 const char *
+          sed -i 's/^\([[:space:]]*\)char \*next_path;/\1const char *next_path;/' "$F"
+          # 2) 兜底：让 libbpf 的 -Werror 不把同类 const 警告升级为错误
+          sed -i 's/^override CFLAGS += -Werror -Wall$/override CFLAGS += -Werror -Wall -Wno-error=incompatible-pointer-types-discards-qualifiers/' "$M"
+          echo "--- 校验 ---"
+          grep -n 'next_path;' "$F"
+          grep -n 'Wno-error=incompatible-pointer-types' "$M"
+          grep -q 'const char \*next_path;' "$F" || { echo "❌ libbpf.c 补丁未命中"; exit 1; }
+          grep -q 'Wno-error=incompatible-pointer-types-discards-qualifiers' "$M" || { echo "❌ Makefile 补丁未命中"; exit 1; }
+          echo "✅ 补丁已生效"
+      
       - name: 启用内核级基带保护
         if: inputs.baseband_guard
         run: |
@@ -640,7 +656,7 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
-
+      
       - name: 保存新的 ccache 缓存
         if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
